@@ -8,3 +8,13 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## Project rules
+- Backend is an owned external Supabase; never enable Lovable Cloud — user requires backend ownership.
+- Deploy target is Netlify via Nitro `netlify` preset (netlify.toml); no SPA fallback — app is SSR.
+- Domain types in src/domain, pure fixtures in src/data, shared UI in src/components/app — keeps data separate from UI.
+- Never fabricate questions, answers, metrics or chart points; show empty states — data is unverified.
+- Answer checking and keys are server-only — keys must never reach the client.
+- Source statuses exclude "verified" until validation tooling exists.
+- No PDFs or credentials in git (.gitignore enforces *.pdf, *.zip, .env).
+- Docs live in docs/ (roadmap, architecture, intake, integration-checklist).

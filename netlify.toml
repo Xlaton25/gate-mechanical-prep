@@ -1,0 +1,9 @@
+# TanStack Start (SSR) on Netlify. NOT a Vite SPA: no index.html fallback / catch-all redirect.
+# The build uses Nitro; NITRO_PRESET=netlify emits Netlify Functions + static assets.
+# Not deployed yet. Secrets go in Netlify environment variables, never in source or VITE_* vars.
+[build]
+  command = "bun run build"
+  publish = "dist/client"
+
+[build.environment]
+  NITRO_PRESET = "netlify"
