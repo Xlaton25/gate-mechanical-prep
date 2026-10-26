@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { FileSearch } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmptyState, PageHeader, Panel, meta } from "@/components/app/ui";
 import { INTAKE_SUMMARY, SOURCE_FILES, STATUS_LABEL, searchSources, totalPages } from "@/data/source-inventory";
 import type { SourceStatus } from "@/domain/types";
@@ -39,13 +38,10 @@ function Admin() {
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row">
         <Input type="search" placeholder="Search file name, year or status" value={q} onChange={(e) => setQ(e.target.value)} className="h-11 rounded-xl" aria-label="Search sources" />
-        <Select value={status} onValueChange={(v) => setStatus(v as SourceStatus | "all")}>
-          <SelectTrigger className="h-11 rounded-xl sm:w-48" aria-label="Filter by status"><SelectValue>{status === "all" ? "All statuses" : STATUS_LABEL[status]}</SelectValue></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            {(Object.keys(STATUS_LABEL) as SourceStatus[]).map((s) => <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <select value={status} onChange={(e) => setStatus(e.target.value as SourceStatus | "all")} aria-label="Filter by status" className="h-11 rounded-xl border border-input bg-card px-3 text-sm sm:w-48">
+          <option value="all">All statuses</option>
+          {(Object.keys(STATUS_LABEL) as SourceStatus[]).map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+        </select>
       </div>
       <p className="mb-3 text-sm text-muted-foreground" role="status">{rows.length} of {SOURCE_FILES.length} files</p>
 
