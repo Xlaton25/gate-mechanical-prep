@@ -21,7 +21,7 @@ export function PracticeAnswerInput({
       onSubmit={(e) => {
         e.preventDefault();
         if (!ready || disabled) return;
-        onSubmit(type === "NAT" ? { kind: "NAT", value: nat.trim() } : type === "MCQ" ? { kind: "MCQ", option: picked[0] } : { kind: "MSQ", options: picked });
+        onSubmit(type === "NAT" ? { kind: "NAT", value: nat.trim() } : type === "MCQ" ? { kind: "MCQ", option: picked[0] ?? "" } : { kind: "MSQ", options: picked });
       }}
       className="space-y-4"
     >
