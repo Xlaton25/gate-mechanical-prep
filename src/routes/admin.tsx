@@ -40,7 +40,7 @@ function Admin() {
       <div className="mb-4 flex flex-col gap-3 sm:flex-row">
         <Input type="search" placeholder="Search file name, year or status" value={q} onChange={(e) => setQ(e.target.value)} className="h-11 rounded-xl" aria-label="Search sources" />
         <Select value={status} onValueChange={(v) => setStatus(v as SourceStatus | "all")}>
-          <SelectTrigger className="h-11 rounded-xl sm:w-48" aria-label="Filter by status"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-11 rounded-xl sm:w-48" aria-label="Filter by status"><SelectValue>{status === "all" ? "All statuses" : STATUS_LABEL[status]}</SelectValue></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
             {(Object.keys(STATUS_LABEL) as SourceStatus[]).map((s) => <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>)}
