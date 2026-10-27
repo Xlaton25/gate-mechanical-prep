@@ -2,7 +2,7 @@
 -- All data below is unmistakably synthetic and rolled back.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(20);
+select plan(21);
 
 -- RLS on every exposed table
 select ok(bool_and(c.relrowsecurity), 'RLS enabled on all public tables')
@@ -30,10 +30,10 @@ insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000a1', 'synthetic-a@example.invalid'),
   ('00000000-0000-0000-0000-0000000000b2', 'synthetic-b@example.invalid');
 insert into public.papers (id, exam_year, session_label, marking_policy_id, status) values
-  ('00000000-0000-0000-0000-00000000p001'::text::uuid, 2027, 'SYNTHETIC', 'gate-2027-v1', 'published');
+  ('00000000-0000-0000-0000-00000000e001', 2027, 'SYNTHETIC', 'gate-2027-v1', 'published');
 insert into public.questions (id, paper_id, number, type, marks, body_md, validation_state, validated_at) values
-  ('00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-00000000p001'::text::uuid, 1, 'NAT', 2, 'SYNTHETIC validated', 'validated', now()),
-  ('00000000-0000-0000-0000-0000000000c2', '00000000-0000-0000-0000-00000000p001'::text::uuid, 2, 'MCQ', 1, 'SYNTHETIC draft', 'unvalidated', null);
+  ('00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-00000000e001', 1, 'NAT', 2, 'SYNTHETIC validated', 'validated', now()),
+  ('00000000-0000-0000-0000-0000000000c2', '00000000-0000-0000-0000-00000000e001', 2, 'MCQ', 1, 'SYNTHETIC draft', 'unvalidated', null);
 insert into private.answer_keys (id, question_id, question_type, version, provenance) values
   ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000c1', 'NAT', 1, 'unknown');
 
