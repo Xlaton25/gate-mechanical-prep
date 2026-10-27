@@ -17,4 +17,8 @@
 - Answer checking and keys are server-only — keys must never reach the client.
 - Source statuses exclude "verified" until validation tooling exists.
 - No PDFs or credentials in git (.gitignore enforces *.pdf, *.zip, .env).
+- SQL migrations live in db/migrations (supabase/migrations is Lovable-managed); unapplied until owned Supabase is linked.
+- Server-only code lives in src/server/ with *.server.ts names — double guard keeps it out of client bundles.
+- Marking policies are per exam year; never score a paper without its own verified policy.
+- Repo is public — commit only synthetic test fixtures, never real questions/keys.
 - Docs live in docs/ (roadmap, architecture, intake, integration-checklist).

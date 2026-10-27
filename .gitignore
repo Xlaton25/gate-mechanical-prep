@@ -35,3 +35,4 @@ dist-ssr
 *.zip
 .env
 .env.*
+!.env.example
