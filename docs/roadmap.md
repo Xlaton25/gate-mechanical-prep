@@ -7,7 +7,12 @@
 - [x] Local-only study settings (minutes unset, Asia/Kolkata, reset time)
 - [x] Netlify config prepared (not deployed)
 - [ ] Owned external Supabase project connected (blocked: ownership decision)
-- [ ] Private GitHub repo under Xlaton25 (blocked: user connects in editor)
+- [x] GitHub sync: Xlaton25/gate-mechanical-prep (public, owner's choice)
+
+## Milestone 1 — DB-ready schema & scoring foundation
+- [x] Unapplied migrations + RLS + pgTAP script (`db/`); not executed
+- [x] Server-only scoring (MCQ/MSQ/NAT, gate-2027-v1 policy) with unit tests
+- [x] Study-day calc + idempotent assignment uniqueness (no scheduler yet)
 
 ## Phase 1 — Data pipeline
 OCR for 9 image-only PDFs; review 2013 booklets, 2014–2016 sets, 2015 image bodies, 2017/2020 mixed content; deduplicate into Papers; extract Questions; validation workflow.
