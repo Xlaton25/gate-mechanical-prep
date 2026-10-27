@@ -15,8 +15,9 @@ describe("studyDay (Asia/Kolkata)", () => {
     expect(studyDay(new Date("2026-10-27T20:00:00Z"))).toBe("2026-10-27");
     expect(studyDay(new Date("2026-10-27T20:00:00Z"), "Asia/Kolkata", "00:00")).toBe("2026-10-28");
   });
-  it("crosses month/year and leap day", () => {
-    expect(studyDay(new Date("2027-01-01T00:00:00Z"))).toBe("2026-12-31"); // 05:30 IST? no: 05:30 ≥ 04:00
+  it("crosses the year boundary", () => {
+    expect(studyDay(new Date("2026-12-31T22:00:00Z"))).toBe("2026-12-31"); // 03:30 IST Jan 1
+    expect(studyDay(new Date("2027-01-01T00:00:00Z"))).toBe("2027-01-01"); // 05:30 IST Jan 1
   });
   it("handles March 1 → Feb 29 in a leap year", () => {
     // 2028-03-01 02:00 IST
