@@ -59,16 +59,16 @@ const isObj = (v: unknown): v is Record<string, unknown> =>
 export function parseResponse(q: ScoringQuestion, raw: unknown): Parsed {
   if (raw === null || raw === undefined) return { kind: "unanswered" };
   if (!isObj(raw)) return { kind: "invalid", reason: "not_an_object" };
-  if (raw.kind === "blank") return { kind: "unanswered" };
-  if (raw.kind !== q.type) return { kind: "invalid", reason: "type_mismatch" };
+  if (raw["kind"] === "blank") return { kind: "unanswered" };
+  if (raw["kind"] !== q.type) return { kind: "invalid", reason: "type_mismatch" };
   const ids = new Set(q.optionIds ?? []);
   if (q.type === "MCQ") {
-    if (typeof raw.option !== "string") return { kind: "invalid", reason: "option_not_string" };
-    if (!ids.has(raw.option)) return { kind: "invalid", reason: "unknown_option" };
-    return { kind: "MCQ", option: raw.option };
+    if (typeof raw["option"] !== "string") return { kind: "invalid", reason: "option_not_string" };
+    if (!ids.has(raw["option"])) return { kind: "invalid", reason: "unknown_option" };
+    return { kind: "MCQ", option: raw["option"] };
   }
   if (q.type === "MSQ") {
-    const o = raw.options;
+    const o = raw["options"];
     if (!Array.isArray(o)) return { kind: "invalid", reason: "options_not_array" };
     if (o.length === 0) return { kind: "unanswered" };
     if (!o.every((x) => typeof x === "string")) return { kind: "invalid", reason: "option_not_string" };
@@ -76,8 +76,8 @@ export function parseResponse(q: ScoringQuestion, raw: unknown): Parsed {
     if (!o.every((x) => ids.has(x as string))) return { kind: "invalid", reason: "unknown_option" };
     return { kind: "MSQ", options: o as string[] };
   }
-  if (raw.value === "") return { kind: "unanswered" };
-  const v = parseDecimal(raw.value);
+  if (raw["value"] === "") return { kind: "unanswered" };
+  const v = parseDecimal(raw["value"]);
   if (!v) return { kind: "invalid", reason: "bad_numeric_syntax" };
   return { kind: "NAT", value: v };
 }
@@ -103,7 +103,7 @@ export function validateKey(q: ScoringQuestion, key: AnswerKey): void {
     });
     rs.sort((a, b) => compareDecimal(a.min, b.min));
     for (let i = 1; i < rs.length; i++)
-      if (compareDecimal(rs[i - 1].max, rs[i].min) >= 0)
+      if (compareDecimal(rs[i - 1]!.max, rs[i]!.min) >= 0)
         throw new KeyError("NAT ranges overlap or touch; they must be disjoint");
   }
 }
