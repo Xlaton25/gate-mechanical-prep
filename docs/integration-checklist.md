@@ -1,17 +1,15 @@
 # Integration checklist
 
-## GitHub (private, under Xlaton25)
-Cannot be done from chat. In the Lovable editor: **Project Settings → Git → Connect GitHub**, choose the Xlaton25 account/org, create the new repository, keep it **private**. Confirm `.gitignore` excludes PDFs and env files before first push.
+## GitHub — done
+Synced: https://github.com/Xlaton25/gate-mechanical-prep (`main`). Visibility: **public**, chosen explicitly by the owner. Because it is public, never commit PDFs, keys, solutions, real questions or credentials (`.gitignore` blocks `*.pdf`, `*.zip`, `.env*` except `.env.example`).
 
-## Owned Supabase
-1. Create the Supabase project under your own account.
-2. In Lovable: **Project Settings → General → External Supabase → Connect** (do not enable Lovable Cloud).
-3. Add schema migrations mirroring `src/domain/types.ts`, with RLS. Keys/answers in server-only tables.
+## Owned Supabase — pending
+Follow `docs/supabase.md`. Do not enable Lovable Cloud. Migrations are prepared but unapplied.
 
-## Netlify
-1. Import the GitHub repo in Netlify; `netlify.toml` sets `NITRO_PRESET=netlify`.
+## Netlify — pending
+1. Import the GitHub repo; `netlify.toml` sets `NITRO_PRESET=netlify`.
 2. Add secrets as Netlify env vars (server-only). Never `VITE_*` for secrets.
-3. Verify SSR routes work with no SPA redirect. Keep the site private until ready.
+3. Verify SSR routes work with no SPA redirect. Not deployed.
 
 ## Before any paid service
 Stop and get explicit approval.
