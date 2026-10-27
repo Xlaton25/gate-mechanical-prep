@@ -2,7 +2,7 @@
 -- Requires migrations 000001–000003. All data is unmistakably synthetic and rolled back.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(37);
+select plan(43);
 
 -- ===== Privileges / RLS =====
 select ok(bool_and(c.relrowsecurity), 'RLS enabled on all public tables')
