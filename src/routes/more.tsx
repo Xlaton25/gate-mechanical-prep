@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, UserRound } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 import { NAV_GROUPS } from "@/components/app/nav";
 import { PageHeader, meta } from "@/components/app/ui";
 
@@ -9,10 +10,20 @@ export const Route = createFileRoute("/more")({
 });
 
 function More() {
+  const { status, user } = useAuth();
+  const signedIn = status === "signed_in";
   return (
     <>
       <PageHeader title="More" />
       <div className="space-y-6">
+        <section>
+          <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account</h2>
+          <Link to={signedIn ? "/settings" : "/auth"} className="surface tap flex h-14 items-center gap-3 px-4 hover:bg-accent">
+            <UserRound className="size-5 text-primary" aria-hidden />
+            <span className="flex-1 truncate font-medium">{signedIn ? (user?.email ?? "Your account") : "Sign in or create account"}</span>
+            <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+          </Link>
+        </section>
         {NAV_GROUPS.map((g) => (
           <section key={g.label}>
             <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{g.label}</h2>
