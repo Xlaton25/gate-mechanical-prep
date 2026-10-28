@@ -7,7 +7,6 @@ import {
   type RevisionData, type RevisionEntry, type SearchData, type TodayData,
 } from "./learning-schema";
 import { rootOf, summarize, type AttemptFact, type TopicNode } from "./progress";
-import { studyDay } from "./study-day";
 
 type Sb = typeof import("@/integrations/supabase/client").supabase;
 const MISMATCH = { ok: false as const, error: "account_mismatch" as const };
@@ -31,14 +30,13 @@ function toMeta(q: QRow, topics: Map<string, TopicNode>): QuestionMeta {
     subject: rootOf(topics, q.topic_id)?.name ?? null,
   };
 }
-async function loadAttempts(sb: Sb, userId: string, topics: Map<string, TopicNode>) {
+async function loadAttempts(sb: Sb, userId: string) {
   const { data, error } = await sb
     .from("attempts")
     .select("question_id, status, marks_thirds, submitted_at, duration_sec, assignment_id, questions!inner(topic_id)")
     .eq("user_id", userId).neq("status", "invalid")
     .order("submitted_at", { ascending: false }).limit(2000);
   if (error) throw error;
-  void topics;
   return data.map((a) => ({
     fact: {
       questionId: a.question_id, status: a.status as AttemptFact["status"], marksThirds: a.marks_thirds,
@@ -66,8 +64,8 @@ export const getToday = createServerFn({ method: "POST" })
       const [a, items, attempts, check, due] = await Promise.all([
         sb.from("daily_assignments").select("study_day, timezone, reset_time").eq("id", assignmentId).single(),
         sb.from("daily_assignment_items").select(`position, reason, questions!inner(${QSEL})`).eq("assignment_id", assignmentId).order("position"),
-        loadAttempts(sb, userId, topics),
-        sb.from("daily_checklist").select("task, done").eq("user_id", userId),
+        loadAttempts(sb, userId),
+        sb.from("daily_checklist").select("study_day, task, done").eq("user_id", userId).order("study_day", { ascending: false }).limit(30),
         sb.from("revision_items").select("question_id", { count: "exact", head: true }).eq("user_id", userId).lte("due_at", new Date().toISOString()),
       ]);
       if (a.error || items.error || check.error || due.error) throw a.error ?? items.error ?? check.error ?? due.error;
@@ -78,16 +76,12 @@ export const getToday = createServerFn({ method: "POST" })
         const m = toMeta(it.questions as unknown as QRow, topics);
         return { ...m, position: it.position, reason: it.reason as DailyReason, done: done.has(m.id), lastStatus: done.get(m.id) ?? null };
       });
-      const checklist = [1, 2, 3].map((t) => false || !!check.data.find((c) => c.task === t && c.done && (c as { study_day?: string }).study_day === undefined));
-      // checklist rows are per study day; re-filter precisely
-      const { data: todayCheck } = await sb.from("daily_checklist").select("task, done").eq("user_id", userId).eq("study_day", day);
-      void checklist;
       return {
         ok: true,
         today: {
           assignmentId, studyDay: day, timezone: a.data.timezone, resetTime: a.data.reset_time.slice(0, 5),
           items: dailyItems, poolSize: pool.length, dueCount: due.count ?? 0,
-          checklist: [1, 2, 3].map((t) => !!todayCheck?.find((c) => c.task === t && c.done)),
+          checklist: [1, 2, 3].map((t) => check.data.some((c) => c.study_day === day && c.task === t && c.done)),
           summary: summarize(attempts.map((x) => x.fact), topics, new Date(), prefs.tz, prefs.reset),
           dailyMinutes: prefs.dailyMinutes,
         },
@@ -251,7 +245,7 @@ export const getAnalytics = createServerFn({ method: "POST" })
     if (!accountMatches(data.expectedUserId, userId)) return MISMATCH;
     try {
       const topics = await loadTopics(sb);
-      const [att, prefs] = await Promise.all([loadAttempts(sb, userId, topics), loadPrefs(sb, userId)]);
+      const [att, prefs] = await Promise.all([loadAttempts(sb, userId), loadPrefs(sb, userId)]);
       return { ok: true, summary: summarize(att.map((a) => a.fact), topics, new Date(), prefs.tz, prefs.reset) };
     } catch (e) { log("analytics", e); return UNAVAILABLE; }
   });
@@ -283,7 +277,7 @@ async function testView(userId: string, testId: string | null): Promise<MiniTest
   const t = await miniTestDeps(userId).load(testId);
   if (!t) return null;
   const items = await Promise.all([...t.items].sort((a, b) => a.position - b.position).map(async (i) => {
-    const v = t.status === "active" ? await fetchPracticeView(i.questionId).catch(() => null) : await fetchPracticeView(i.questionId).catch(() => null);
+    const v = await fetchPracticeView(i.questionId).catch(() => null);
     const d = responseSchema.safeParse(i.draft);
     return { position: i.position, question: v, stale: !v || v.revision !== i.revision, draft: d.success ? d.data : null };
   }));
@@ -345,4 +339,3 @@ export const finalizeMiniTest = createServerFn({ method: "POST" })
     } catch (e) { log("finalize", e); return UNAVAILABLE; }
   });
 
-export { studyDay };
