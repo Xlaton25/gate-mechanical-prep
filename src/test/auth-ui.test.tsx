@@ -27,7 +27,7 @@ describe("AuthForm", () => {
   });
   it("shows pending then error on failed sign-in", async () => {
     let resolve: (v: { error: string | null }) => void = () => {};
-    const client: AuthClient = { signIn: vi.fn(() => new Promise((r) => { resolve = r; })), signUp: vi.fn() };
+    const client: AuthClient = { signIn: vi.fn(() => new Promise<{ error: string | null }>((r) => { resolve = r; })), signUp: vi.fn() };
     render(<AuthForm client={client} />);
     fill("a@example.com", "password123");
     fireEvent.click(screen.getByRole("button", { name: "Sign in" }));

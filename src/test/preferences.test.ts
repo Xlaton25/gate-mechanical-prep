@@ -59,7 +59,7 @@ describe("savePreferences", () => {
     const s = fakeStore();
     await savePreferences(s, A, input, true);
     expect(s.insert).not.toHaveBeenCalled();
-    const [uid, patch] = (s.update as ReturnType<typeof vi.fn>).mock.calls[0];
+    const [uid, patch] = vi.mocked(s.update).mock.calls[0]!;
     expect(uid).toBe(A);
     expect(Object.keys(patch).sort()).toEqual(["daily_minutes", "reset_time", "timezone"]);
   });
