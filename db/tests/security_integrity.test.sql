@@ -1,5 +1,5 @@
--- pgTAP checks for a FUTURE local Supabase run (`supabase test db`). NOT executed yet.
--- Requires migrations 000001–000003. All data is unmistakably synthetic and rolled back.
+-- pgTAP checks (`supabase test db`, or db/tests/security_integrity.pg.sh on plain PostgreSQL).
+-- Requires migrations 000001–000005. All data is unmistakably synthetic and rolled back.
 begin;
 create extension if not exists pgtap with schema extensions;
 select plan(43);
@@ -116,30 +116,36 @@ select throws_ok($$insert into public.daily_assignments (user_id, study_day, tim
   '23505', null, 'one assignment per user per study day');
 
 -- ===== Attempts consistency =====
-select lives_ok($$insert into public.attempts (user_id, question_id, response, status, marks_thirds, key_version_id, marking_policy_id)
+select lives_ok($$insert into public.attempts (user_id, question_id, response, status, marks_thirds, key_version_id, marking_policy_id, submission_id, request_hash, context_fingerprint)
   values ('00000000-0000-0000-0000-0000000000b2', '00000000-0000-0000-0000-0000000000c1', '{"kind":"NAT","value":"3.15"}', 'correct', 6,
-          '00000000-0000-0000-0000-0000000000d1', 'gate-2027-v1')$$, 'standalone attempt (null assignment) allowed');
-select throws_ok($$insert into public.attempts (user_id, question_id, status, marks_thirds, key_version_id, marking_policy_id)
+          '00000000-0000-0000-0000-0000000000d1', 'gate-2027-v1',
+          '00000000-0000-4000-8000-000000000501', repeat('1', 64), repeat('0', 32))$$, 'standalone attempt (null assignment) allowed');
+select throws_ok($$insert into public.attempts (user_id, question_id, status, marks_thirds, key_version_id, marking_policy_id, submission_id, request_hash, context_fingerprint)
   values ('00000000-0000-0000-0000-0000000000b2', '00000000-0000-0000-0000-0000000000c1', 'unanswered', 0,
-          '00000000-0000-0000-0000-0000000000d2', 'gate-2027-v1')$$,
+          '00000000-0000-0000-0000-0000000000d2', 'gate-2027-v1',
+          '00000000-0000-4000-8000-000000000502', repeat('2', 64), repeat('0', 32))$$,
   '23503', null, 'key version of another question rejected');
-select throws_ok($$insert into public.attempts (user_id, question_id, status, marks_thirds, key_version_id, marking_policy_id)
+select throws_ok($$insert into public.attempts (user_id, question_id, status, marks_thirds, key_version_id, marking_policy_id, submission_id, request_hash, context_fingerprint)
   values ('00000000-0000-0000-0000-0000000000b2', '00000000-0000-0000-0000-0000000000c1', 'unanswered', 0,
-          '00000000-0000-0000-0000-0000000000d1', 'synthetic-2027-alt')$$,
+          '00000000-0000-0000-0000-0000000000d1', 'synthetic-2027-alt',
+          '00000000-0000-4000-8000-000000000503', repeat('3', 64), repeat('0', 32))$$,
   '23514', null, 'policy not attached to the paper rejected');
-select throws_ok($$insert into public.attempts (user_id, question_id, assignment_id, status, marks_thirds, key_version_id, marking_policy_id)
+select throws_ok($$insert into public.attempts (user_id, question_id, assignment_id, status, marks_thirds, key_version_id, marking_policy_id, submission_id, request_hash, context_fingerprint)
   values ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-0000000000f1', 'unanswered', 0,
-          '00000000-0000-0000-0000-0000000000d1', 'gate-2027-v1')$$,
+          '00000000-0000-0000-0000-0000000000d1', 'gate-2027-v1',
+          '00000000-0000-4000-8000-000000000504', repeat('4', 64), repeat('0', 32))$$,
   '23503', null, 'assignment not containing the question rejected');
 insert into public.daily_assignment_items (assignment_id, user_id, position, question_id)
   values ('00000000-0000-0000-0000-0000000000f1', '00000000-0000-0000-0000-0000000000a1', 1, '00000000-0000-0000-0000-0000000000c1');
-select throws_ok($$insert into public.attempts (user_id, question_id, assignment_id, status, marks_thirds, key_version_id, marking_policy_id)
+select throws_ok($$insert into public.attempts (user_id, question_id, assignment_id, status, marks_thirds, key_version_id, marking_policy_id, submission_id, request_hash, context_fingerprint)
   values ('00000000-0000-0000-0000-0000000000b2', '00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-0000000000f1', 'unanswered', 0,
-          '00000000-0000-0000-0000-0000000000d1', 'gate-2027-v1')$$,
+          '00000000-0000-0000-0000-0000000000d1', 'gate-2027-v1',
+          '00000000-0000-4000-8000-000000000505', repeat('5', 64), repeat('0', 32))$$,
   '23503', null, 'another learner''s assignment rejected');
-select lives_ok($$insert into public.attempts (user_id, question_id, assignment_id, status, marks_thirds, key_version_id, marking_policy_id)
+select lives_ok($$insert into public.attempts (user_id, question_id, assignment_id, status, marks_thirds, key_version_id, marking_policy_id, submission_id, request_hash, context_fingerprint)
   values ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-0000000000f1', 'unanswered', 0,
-          '00000000-0000-0000-0000-0000000000d1', 'gate-2027-v1')$$, 'matching assignment attempt allowed');
+          '00000000-0000-0000-0000-0000000000d1', 'gate-2027-v1',
+          '00000000-0000-4000-8000-000000000506', repeat('6', 64), repeat('0', 32))$$, 'matching assignment attempt allowed');
 
 -- ===== As learner A =====
 set local role authenticated;

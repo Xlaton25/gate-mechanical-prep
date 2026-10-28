@@ -18,7 +18,7 @@ Repo: https://github.com/Xlaton25/gate-mechanical-prep (`main`, public by owner'
 - `bunx vitest run` — 109 unit tests (scoring, practice submit/UI, study day, server boundary, inventory, routing, preferences, auth)
 - SQL rehearsal: `npm i @electric-sql/pglite` in a scratch dir, then `node db/tests/practice_submission.rehearsal.mjs`
 - `tsgo --noEmit` — typecheck
-- SQL tests: see `docs/supabase.md` (43 pgTAP checks; not yet run on Supabase)
+- SQL tests: `db/tests/security_integrity.pg.sh` (43 pgTAP checks, pass on local PostgreSQL 17 after 000001–000005; not run on Supabase) and `db/tests/practice_hardening.pg.sh` (26 concurrency/replay checks)
 - Netlify build independently run locally by Codex (Node 24/npm, commit 1d770f6), succeeded; live deploy not verified. `.netlify/` output is git-ignored.
 
 ## Docs

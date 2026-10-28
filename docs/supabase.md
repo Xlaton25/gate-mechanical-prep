@@ -19,10 +19,10 @@ Canonical, reviewable SQL stays in `db/migrations/`. It was applied to GATE **on
 - anon: 0 table and 0 column grants in public/private. `authenticated` has no USAGE on schema `private`.
 - `user_preferences` (authenticated): SELECT yes; INSERT on user_id allowed; UPDATE on reset_time yes, on user_id **no**; DELETE no.
 - authenticated cannot INSERT into attempts or questions; service_role can read private.answer_keys.
-- Rows: 1 marking policy (`gate-2027-v1`), 0 preference rows. No learner or content rows seeded.
+- Rows at first apply: 1 marking policy (`gate-2027-v1`), 0 preference rows; 000004 later added `gate-2026-v1`. No learner or content rows seeded.
 
 ## Tests
-- pgTAP file `db/tests/security_integrity.test.sql` (43 checks): **not yet executed on Supabase**. Codex independently ran it: all 43 assertions passed in ephemeral PGlite with a simulated auth adapter.
+- pgTAP file `db/tests/security_integrity.test.sql` (43 checks): **not yet executed on Supabase**. Earlier, Codex independently ran it against 000001–000003 in PGlite (43/43). After 000004 added NOT NULL `submission_id`/`request_hash`/`context_fingerprint`, its synthetic attempt fixtures hit 23502 before the intended checks (Codex reported 6 failures on 000001–000005); the six fixtures now supply unique submission UUIDs and placeholder hashes, with no assertion changed or removed. Re-run 2026-10-28 with **real pgTAP 1.3.3 on real PostgreSQL 17** after 000001–000005 via `db/tests/security_integrity.pg.sh`: **43/43 passed**. Harness notes: pgTAP was loaded from its generated SQL (no extension package), so the runner drops only the `create extension pgtap` line; `auth.users`/`auth.uid()` are stubs that read `request.jwt.claims` like Supabase.
 - Maintainer local run (Supabase CLI + Docker): copy `db/migrations/*` → a scratch `supabase/migrations/`, `db/tests/*` → `supabase/tests/`, then `supabase start && supabase db reset && supabase test db`. Local only — never push that copy.
 
 ## Security boundaries
@@ -35,7 +35,7 @@ Canonical, reviewable SQL stays in `db/migrations/`. It was applied to GATE **on
 ## Integrity rules
 - NAT keys: inclusive disjoint `[min,max]` ranges (gist exclusion), finite only, NAT keys only.
 - Key versions unique per question; attempts store `key_version_id` (same question) and `marking_policy_id` (must equal the paper's policy).
-- Marking policies are per exam year; only `gate-2027-v1` exists. Historical papers stay unscorable until their own policy is verified.
+- Marking policies are per exam year; verified policies are `gate-2026-v1` and `gate-2027-v1` (each its own year only). Other historical papers stay unscorable until their own policy is verified.
 - Daily assignments idempotent (`unique(user_id, study_day)`, items unique per position/question). **No scheduler yet.**
 
 ## Milestone 3 — secure practice submission (000004)
@@ -49,7 +49,13 @@ Canonical, reviewable SQL stays in `db/migrations/`. It was applied to GATE **on
 - Replay first: `practice_lookup_submission(user, submission, hash)` runs before any current content is required; same hash → original attempt, altered hash → conflict, even if the question was retired or the key unverified since.
 - Scoring-content race closed: `practice_record_attempt` takes `SHARE` locks (fixed order) on `marking_policies, papers, questions, question_options, private.answer_keys, private.answer_key_nat_ranges, private.solutions`, then re-derives the context. Writers (`ROW EXCLUSIVE`) wait for in-flight saves and vice versa; saves never block each other. `lock_timeout` 5s → sanitized `server_error` (client retries the same frozen submission). Content imports should run outside peak practice and lock tables in the same order to avoid deadlocks.
 - Solution snapshot: `private.solutions` gains `answer_key_id` (same-question FK) and `reviewed`; rows are immutable (trigger; only reviewed false→true). `attempts.solution_id` stores the reviewed solution for the exact key version scored (composite FK), or null. Replay returns that snapshot. `practice_solution` (newest arbitrary) was dropped.
-- Verified: `db/tests/practice_hardening.pg.sh` — real PostgreSQL 17, separate concurrent sessions, synthetic throwaway cluster: 26/26 passed (writer blocked by in-flight save; save during uncommitted newer key → stale; 3 simultaneous identical retries → 1 row; different saves not serialised; replay after retirement; immutability; privileges). Live read-only check after apply: all practice functions invoker, `search_path=""`, anon/authenticated execute = false; 0 attempts/solutions/questions. pgTAP suite and live signed-in submission still unrun.
+- Verified: `db/tests/practice_hardening.pg.sh` — real PostgreSQL 17, separate concurrent sessions, synthetic throwaway cluster: 26/26 passed (writer blocked by in-flight save; save during uncommitted newer key → stale; 3 simultaneous identical retries → 1 row; different saves not serialised; replay after retirement; immutability; privileges). Live read-only check after apply: all practice functions invoker, `search_path=""`, anon/authenticated execute = false; 0 attempts/solutions/questions. Live signed-in submission still unrun (no content).
+
+## Known limitation — content edits vs what the learner saw
+- The fingerprint/stale check protects the load→score→save race: a save never uses a key/options/policy that changed after scoring.
+- It does **not** bind the question body/option *wording the learner viewed*: the detail response carries no revision, so if wording or options were edited between viewing and submitting, the answer would be scored against the current content, not the displayed one.
+- No content editing or import is enabled today, so no learner is affected. Before enabling admin edits or imports that change live questions, add a view revision (e.g. content hash in the detail DTO, echoed on submit and checked in `practice_record_attempt`) so changed wording/options return `stale` instead of grading an old display.
+- The private pilot (`ME2026-normalized.json`) is **not imported**; its transfer is pending the owner's explicit approval.
 - Parity: `src/test/migration-parity.test.ts` asserts each applied file equals its canonical source (comments/whitespace ignored).
 
 ## App usage (milestone 2)
