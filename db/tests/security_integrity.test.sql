@@ -1,5 +1,5 @@
--- pgTAP checks for a FUTURE local Supabase run (`supabase test db`). NOT executed yet.
--- Requires migrations 000001–000003. All data is unmistakably synthetic and rolled back.
+-- pgTAP checks (`supabase test db`, or db/tests/security_integrity.pg.sh on plain PostgreSQL).
+-- Requires migrations 000001–000005. All data is unmistakably synthetic and rolled back.
 begin;
 create extension if not exists pgtap with schema extensions;
 select plan(43);
