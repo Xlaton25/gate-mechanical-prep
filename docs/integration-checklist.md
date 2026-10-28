@@ -11,7 +11,7 @@ GATE (`utlagjareqqrtztmlmgz`) linked; combined schema migration applied 2026-10-
 2. Add secrets as Netlify env vars (server-only). Never `VITE_*` for secrets.
 3. Verify SSR routes work with no SPA redirect. Not deployed.
 
-Build status: `NITRO_PRESET=netlify npm run build` verified locally by the owner (Node 24/npm, commit 1d770f6). Live Netlify deploy not verified.
+Build status: `NITRO_PRESET=netlify npm run build` independently run locally by Codex (Node 24/npm, commit 1d770f6) and succeeded. Live Netlify deploy not verified.
 
 ## Before any paid service
 Stop and get explicit approval.

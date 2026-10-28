@@ -20,7 +20,7 @@ Canonical, reviewable SQL stays in `db/migrations/`. It was applied to GATE **on
 - Rows: 1 marking policy (`gate-2027-v1`), 0 preference rows. No learner or content rows seeded.
 
 ## Tests
-- pgTAP file `db/tests/security_integrity.test.sql` (43 checks): **not yet executed on Supabase**. The owner reports all 43 assertions passed in ephemeral PGlite with a simulated auth adapter.
+- pgTAP file `db/tests/security_integrity.test.sql` (43 checks): **not yet executed on Supabase**. Codex independently ran it: all 43 assertions passed in ephemeral PGlite with a simulated auth adapter.
 - Maintainer local run (Supabase CLI + Docker): copy `db/migrations/*` → a scratch `supabase/migrations/`, `db/tests/*` → `supabase/tests/`, then `supabase start && supabase db reset && supabase test db`. Local only — never push that copy.
 
 ## Security boundaries

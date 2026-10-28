@@ -10,7 +10,7 @@
 - [x] GitHub sync: Xlaton25/gate-mechanical-prep (public, owner's choice)
 
 ## Milestone 1 — DB-ready schema & scoring foundation
-- [x] Unapplied migrations + RLS + pgTAP script (`db/`); not executed
+- [x] Migrations + RLS applied to GATE as combined remote migration `20261028040618`; pgTAP script (`db/tests`) not executed on Supabase
 - [x] Server-only scoring (MCQ/MSQ/NAT, gate-2027-v1 policy) with unit tests
 - [x] Study-day calc + idempotent assignment uniqueness (no scheduler yet)
 
