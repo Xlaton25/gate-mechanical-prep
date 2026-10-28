@@ -121,7 +121,7 @@ function QuestionPanel({ userId, questionId, api, onSaved }: { userId: string; q
     const payload = JSON.stringify(response);
     // Retries of the same answer reuse the submission ID so the server records it once.
     if (!submission.current || submission.current.payload !== payload) submission.current = { id: crypto.randomUUID(), payload };
-    const durationSec = submission.current.id ? Math.min(86400, Math.round((Date.now() - started.current) / 1000)) : null;
+    const durationSec = Math.min(86400, Math.round((Date.now() - started.current) / 1000));
     setPending(true);
     setError(null);
     let res: SubmitResult | null = null;

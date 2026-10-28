@@ -1,24 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Lock } from "lucide-react";
-import { DataNotice, EmptyState, PageHeader, Panel, meta } from "@/components/app/ui";
-import { PracticeAnswerInput } from "@/components/app/PracticeAnswerInput";
+import { PageHeader, meta } from "@/components/app/ui";
+import { PracticeSession, useDefaultPracticeApi } from "@/components/app/PracticeSession";
 
 export const Route = createFileRoute("/practice")({
-  head: () => meta("Daily Practice", "Daily 10-question practice from validated GATE ME PYQs."),
+  head: () => meta("Pilot Practice", "Pilot practice on validated GATE ME questions, checked and saved on the server."),
   component: Practice,
 });
 
 function Practice() {
+  const api = useDefaultPracticeApi();
   return (
     <>
-      <PageHeader title="Daily Practice" description="10 validated questions a day, checked on the server." />
-      <DataNotice />
-      <EmptyState icon={Lock} title="Scored practice is disabled">
-        No questions are validated and no answer keys are verified. Practice will unlock when both exist and answers are checked server-side — never in your browser.
-      </EmptyState>
-      <Panel title="Answer input preview (no question loaded)" className="mt-6">
-        <PracticeAnswerInput type="MCQ" disabled onSubmit={() => {}} />
-      </Panel>
+      <PageHeader title="Pilot Practice" description="Validated questions only, checked on the server and saved to your account." />
+      <div role="note" className="mb-6 rounded-2xl border border-border bg-secondary p-4 text-sm text-secondary-foreground">
+        This is pilot practice, not the scheduled daily 10 — the daily engine isn't built yet. Scores and progress come only from your saved attempts.
+      </div>
+      <PracticeSession api={api} />
     </>
   );
 }
