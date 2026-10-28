@@ -87,7 +87,7 @@ ok "created 2 answer keys"           "$(jf "$R" "d['created']['keys']")" 2
 ok "created 1 NAT range"             "$(jf "$R" "d['created']['nat_ranges']")" 1
 ok "created 2 solutions"             "$(jf "$R" "d['created']['solutions']")" 2
 ok "created 2 syllabus topics"       "$(jf "$R" "d['created']['topics']")" 2
-ok "no key material in the reply"    "$(jf "$R" "sorted(d)")" "['created', 'exam_year', 'job_id', 'marking_policy_id', 'outcome', 'payload_md5', 'paper_id', 'session_label', 'source_file_id']"
+ok "no key material in the reply"    "$(jf "$R" "sorted(d)")" "['created', 'exam_year', 'job_id', 'marking_policy_id', 'outcome', 'paper_id', 'payload_md5', 'session_label', 'source_file_id']"
 ok "audit job recorded"              "$(cnt "private.import_jobs")" 1
 ok "job succeeded"                   "$(q -c "select status from private.import_jobs")" succeeded
 ok "paper published for 2026"        "$(cnt "public.papers where exam_year=2026 and session_label='synthetic' and status='published' and marking_policy_id='gate-2026-v1'")" 1
