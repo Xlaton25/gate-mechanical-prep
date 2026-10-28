@@ -22,8 +22,10 @@ export function parsePracticeView(raw: unknown, expectedQuestionId: string): Pra
   if (!Array.isArray(options)) return null;
   const opts: { id: string; bodyMd: string }[] = [];
   for (const o of options) {
-    if (!isObj(o) || typeof o.id !== "string" || !/^[A-H]$/.test(o.id) || typeof o.body_md !== "string") return null;
-    opts.push({ id: o.id, bodyMd: o.body_md });
+    if (!isObj(o)) return null;
+    const oid = o["id"], ob = o["body_md"];
+    if (typeof oid !== "string" || !/^[A-H]$/.test(oid) || typeof ob !== "string") return null;
+    opts.push({ id: oid, bodyMd: ob });
   }
   return {
     id,
