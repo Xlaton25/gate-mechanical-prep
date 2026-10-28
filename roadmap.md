@@ -8,4 +8,4 @@
 - [x] Review corrections: frozen retries, account binding, content locks, replay-first + solution snapshot, safe math rendering, migration 000005 (20261028165705)
 - [x] Fix stale attempt fixtures in 43-check pgTAP suite (43/43 on PG17 + pgTAP)
 - [ ] View-revision binding before admin content edits
-- [ ] Import the validated 2026 pilot privately (waiting on owner's import)
+- [ ] Import the validated 2026 pilot privately (blocked: ME2026-normalized.json transfer awaits owner's explicit approval)
