@@ -20,7 +20,7 @@ function deferred<T>() {
 
 function fakeSource() {
   let cb: (e: string, s: ReturnType<typeof sess> | null) => void = () => {};
-  const initial = deferred<{ data: { session: ReturnType<typeof sess> | null } }>();
+  const initial = deferred<{ data: { session: ReturnType<typeof sess> | null }; error?: unknown }>();
   const signOut = vi.fn<() => Promise<{ error: unknown }>>(async () => ({ error: null }));
   const source: SessionSource = {
     onAuthStateChange: (fn) => { cb = fn; return { data: { subscription: { unsubscribe: () => {} } } }; },
@@ -107,6 +107,59 @@ describe("AuthProvider lifecycle", () => {
     act(() => f.emit("SIGNED_IN", sess(B)));
     await act(async () => { d.resolve({ error: null }); await p; });
     expect(result.current.user?.id).toBe(B);
+    expect(result.current.status).toBe("signed_in");
+  });
+
+  it("same-uid re-login during pending signOut is not overwritten", async () => {
+    const f = fakeSource();
+    const d = deferred<{ error: unknown }>();
+    f.signOut.mockReturnValueOnce(d.promise);
+    const { result } = setup(f.source);
+    await act(async () => { f.initial.resolve({ data: { session: sess(A) } }); });
+    let p!: Promise<boolean>;
+    act(() => { p = result.current.signOut(); });
+    act(() => f.emit("SIGNED_OUT", null));
+    act(() => f.emit("SIGNED_IN", sess(A)));
+    await act(async () => { d.resolve({ error: null }); await p; });
+    expect(result.current.status).toBe("signed_in");
+    expect(result.current.user?.id).toBe(A);
+  });
+
+  it("same-uid SIGNED_IN during a failing signOut shows no stale error", async () => {
+    const f = fakeSource();
+    const d = deferred<{ error: unknown }>();
+    f.signOut.mockReturnValueOnce(d.promise);
+    const { result } = setup(f.source);
+    await act(async () => { f.initial.resolve({ data: { session: sess(A) } }); });
+    let p!: Promise<boolean>;
+    act(() => { p = result.current.signOut(); });
+    act(() => f.emit("SIGNED_IN", sess(A)));
+    await act(async () => { d.resolve({ error: { message: "x" } }); await p; });
+    expect(result.current.status).toBe("signed_in");
+    expect(result.current.signOutError).toBeNull();
+  });
+
+  it("SIGNED_OUT event during signOut ends signed out", async () => {
+    const f = fakeSource();
+    f.signOut.mockImplementationOnce(async () => { f.emit("SIGNED_OUT", null); return { error: null }; });
+    const { result } = setup(f.source);
+    await act(async () => { f.initial.resolve({ data: { session: sess(A) } }); });
+    await act(async () => { expect(await result.current.signOut()).toBe(true); });
+    expect(result.current.status).toBe("signed_out");
+  });
+
+  it("getSession resolving with {error} is unavailable", async () => {
+    const f = fakeSource();
+    const { result } = setup(f.source);
+    await act(async () => { f.initial.resolve({ data: { session: null }, error: { message: "bad" } }); });
+    expect(result.current.status).toBe("unavailable");
+  });
+
+  it("getSession {error} after a newer event is ignored", async () => {
+    const f = fakeSource();
+    const { result } = setup(f.source);
+    act(() => f.emit("SIGNED_IN", sess(A)));
+    await act(async () => { f.initial.resolve({ data: { session: null }, error: { message: "bad" } }); });
     expect(result.current.status).toBe("signed_in");
   });
 
