@@ -154,10 +154,11 @@ export async function submitAttempt(store: PracticeStore, userId: string, input:
     });
     const rec = recordSchema.safeParse(raw);
     if (!rec.success) return { ok: false, error: "server_error" };
-    if (rec.data.outcome === "conflict" || rec.data.outcome === "stale") return { ok: false, error: rec.data.outcome };
+    const saved = rec.data;
+    if (!("attempt" in saved)) return { ok: false, error: saved.outcome };
     // Solution only after the attempt is durably saved.
     const solutionMd = await store.loadSolution(input.questionId);
-    return { ok: true, outcome: rec.data.outcome, attempt: toSummary(rec.data.attempt), solutionMd };
+    return { ok: true, outcome: saved.outcome, attempt: toSummary(saved.attempt), solutionMd };
   } catch (e) {
     console.error("[practice] submit failed:", e instanceof Error ? e.name : "unknown");
     return { ok: false, error: "server_error" };
