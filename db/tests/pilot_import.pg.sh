@@ -67,8 +67,7 @@ o = q1(); o["options"][1]["body_md"] = "beta reworded";            w("opt_body",
 o = q1(); o["body_md"] = "Synthetic question body v2";             w("q_body", base(questions=[o, q2()]))
 o = q1(); o["key"]["mcq_option"] = "A";                            w("key_move", base(questions=[o, q2()]))
 o = q1(); o["key"]["mcq_option"] = "E";                            w("key_missing", base(questions=[o, q2()]))
-o = q2(); o["options"] = [{"option_id": "A", "body_md": "x"}, {"option_id": "B", "body_md": "y"}]
-                                                                  w("nat_opts", base(questions=[q1(), o]))
+o = q2(); o["options"] = [{"option_id": "A", "body_md": "x"}, {"option_id": "B", "body_md": "y"}]; w("nat_opts", base(questions=[q1(), o]))
 o = q2(); o["key"]["nat_ranges"] = [{"min": "abc", "max": "2.00"}]; w("nat_bad", base(questions=[q1(), o]))
 o = q2(); o["key"]["nat_ranges"] = [{"min": "1.50", "max": "1.00"}]; w("nat_inverted", base(questions=[q1(), o]))
 o = q1(); o["key"]["provenance_verified"] = False;                  w("key_unverified", base(questions=[o, q2()]))
@@ -125,7 +124,7 @@ done
 ok "reworded option detected"        "$(imp "$DIR/opt_body.json" 2>&1 || true | grep -c 'option .* differs')" 1
 
 # ---------- 4. invalid payloads are rejected before any write ----------
-for v in key_missing nat_opts dup_number wrong_policy bad_sha no_solution nat_opts; do
+for v in key_missing nat_opts dup_number wrong_policy bad_sha no_solution; do
   E=$(imp "$DIR/$v.json" 2>&1 || true)
   ok "$v rejected"                   "$(echo "$E" | grep -c 'ERROR')" 1
 done
