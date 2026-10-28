@@ -33,7 +33,8 @@ dist-ssr
 # Never commit source PDFs, archives or credentials
 *.pdf
 *.zip
-.env
+# .env is tracked: it holds ONLY public browser config (Supabase URL + publishable key).
+# Hosted builds read it; ignoring it broke sign-in. Secrets never go in any env file here.
 .env.*
 !.env.example
 
