@@ -3,8 +3,8 @@
 ## GitHub — done
 Synced: https://github.com/Xlaton25/gate-mechanical-prep (`main`). Visibility: **public**, chosen explicitly by the owner. Because it is public, never commit PDFs, keys, solutions, real questions or credentials (`.gitignore` blocks `*.pdf`, `*.zip`, `.env*` except `.env.example`).
 
-## Owned Supabase — pending
-Owner action: Project Settings → General → External Supabase → Connect. Do not enable Lovable Cloud. Migrations are prepared but unapplied; maintainer steps in `docs/supabase.md`.
+## Owned Supabase — connected
+GATE (`utlagjareqqrtztmlmgz`) linked; combined schema migration applied 2026-10-28 (`docs/supabase.md`). Owner: add preview/Netlify URLs to Supabase Auth Redirect URLs; confirm email provider settings.
 
 ## Netlify — pending
 1. Import the GitHub repo; `netlify.toml` sets `NITRO_PRESET=netlify`.

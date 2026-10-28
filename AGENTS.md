@@ -17,7 +17,9 @@
 - Answer checking and keys are server-only — keys must never reach the client.
 - Source statuses exclude "verified" until validation tooling exists.
 - No PDFs or credentials in git (.gitignore enforces *.pdf, *.zip, .env).
-- SQL migrations live in db/migrations (supabase/migrations is Lovable-managed); unapplied until owned Supabase is linked.
+- Canonical SQL lives in db/migrations; the owned GATE project receives it as ONE combined Lovable migration (mapping in docs/supabase.md) — never re-run db/migrations against the remote.
+- Auth state comes only from AuthProvider in src/lib/auth.tsx (single listener) — avoids competing subscribers and stale sessions.
+- Account preferences go through the PreferencesStore port with the user session (RLS), never the admin client; updates send only preference columns.
 - Server-only code lives in src/server/ with *.server.ts names — double guard keeps it out of client bundles.
 - Marking policies are per exam year; never score a paper without its own verified policy.
 - Repo is public — commit only synthetic test fixtures, never real questions/keys.

@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, UserRound } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/lib/local-settings";
@@ -41,13 +42,17 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           ))}
         </nav>
+        <div className="border-t p-3"><AccountLink /></div>
       </aside>
 
       <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b bg-background/90 px-4 backdrop-blur lg:hidden">
         <Link to="/" className="font-semibold tracking-tight">GATE 2027 <span className="text-primary">ME</span></Link>
+        <div className="flex items-center gap-1">
+        <Button variant="ghost" size="icon" asChild><Link to="/auth" aria-label="Account"><UserRound /></Link></Button>
         <Button variant="ghost" size="icon" onClick={toggle} aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}>
           {dark ? <Sun /> : <Moon />}
         </Button>
+        </div>
       </header>
 
       <main id="main" className="pb-28 lg:pb-12 lg:pl-64">
@@ -72,5 +77,16 @@ export function AppShell({ children }: { children: ReactNode }) {
         </ul>
       </nav>
     </div>
+  );
+}
+
+function AccountLink() {
+  const { status, user } = useAuth();
+  const label = status === "signed_in" ? (user?.email ?? "Account") : status === "loading" ? "Account" : "Sign in";
+  return (
+    <Link to={status === "signed_in" ? "/settings" : "/auth"} className={linkBase}>
+      <UserRound className="size-4 shrink-0" aria-hidden />
+      <span className="truncate">{label}</span>
+    </Link>
   );
 }
