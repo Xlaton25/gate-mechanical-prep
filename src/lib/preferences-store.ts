@@ -8,6 +8,7 @@ import { PREF_COLUMNS, type PreferencesPatch, type PreferencesRow, type Preferen
  * insert(user_id, daily_minutes, timezone, reset_time) / update(daily_minutes, timezone, reset_time).
  */
 type PrefsSchema = {
+  __InternalSupabase: { PostgrestVersion: "14.18" };
   public: {
     Tables: {
       user_preferences: {

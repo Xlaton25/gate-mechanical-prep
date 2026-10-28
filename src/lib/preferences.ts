@@ -39,7 +39,7 @@ export const preferencesRowSchema = z.object({
 });
 
 export type PreferencesRow = z.infer<typeof preferencesRowSchema>;
-export interface PreferencesPatch { daily_minutes: number | null; timezone: string; reset_time: string }
+export type PreferencesPatch = { daily_minutes: number | null; timezone: string; reset_time: string };
 export interface StoreError { code?: string; message: string }
 export interface StoreResult { data: unknown; error: StoreError | null }
 
