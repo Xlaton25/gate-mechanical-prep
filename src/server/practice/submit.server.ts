@@ -86,7 +86,9 @@ const saved = (s: z.infer<typeof savedSchema>): SubmitResult => ({
 export function canonicalPayload(input: SubmitInput): string {
   const r = input.response;
   const response = r.kind === "MSQ" ? { kind: "MSQ", options: [...r.options].sort() } : r;
-  return JSON.stringify({ q: input.questionId, a: input.assignmentId, d: input.durationSec, r: response });
+  // The viewed revision is part of the payload: the same view must replay, and a different
+  // view is a different request.
+  return JSON.stringify({ q: input.questionId, a: input.assignmentId, d: input.durationSec, v: input.expectedRevision, r: response });
 }
 
 export async function requestHash(input: SubmitInput): Promise<string> {
@@ -139,6 +141,9 @@ export async function submitAttempt(store: PracticeStore, userId: string, input:
     const parsedCtx = ctxSchema.safeParse(await store.loadContext(input.questionId));
     if (!parsedCtx.success || parsedCtx.data.question_id !== input.questionId) return { ok: false, error: "not_available" };
     const ctx = parsedCtx.data;
+    // What the learner was shown must still be current. If wording, options, key or policy
+    // changed since the question was displayed, refuse before anything is scored or saved.
+    if (input.expectedRevision !== ctx.fingerprint) return { ok: false, error: "stale" };
     const key = toKey(ctx);
     if (!key || !policyMatches(ctx)) return { ok: false, error: "not_available" };
 

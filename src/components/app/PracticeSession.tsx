@@ -107,7 +107,7 @@ function SignedInPractice({ userId, api }: { userId: string; api: PracticeApi })
 function QuestionPanel({ userId, questionId, api, onSaved }: { userId: string; questionId: string; api: PracticeApi; onSaved: () => void }) {
   const detail = useQuery({ queryKey: ["practice", userId, "q", questionId], queryFn: () => api.detail(userId, questionId) });
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<SubmitError | "network" | null>(null);
   const [result, setResult] = useState<{ attempt: AttemptSummary; solutionMd: string | null } | null>(null);
   const [round, setRound] = useState(0);
   // Unresolved submission: the exact input first sent (ID, duration, answer), resent unchanged
@@ -143,11 +143,11 @@ function QuestionPanel({ userId, questionId, api, onSaved }: { userId: string; q
     // Panel is keyed by account and question; an unmounted (switched) panel drops the completion.
     if (!alive.current) return;
     setPending(false);
-    if (!res) return setError(SUBMIT_MSG.network);
+    if (!res) return setError("network");
     if (!res.ok) {
       // Only an unknown outcome keeps the frozen input for a safe retry.
       if (res.error !== "server_error") setUnresolved(null);
-      return setError(SUBMIT_MSG[res.error]);
+      return setError(res.error);
     }
     setUnresolved(null);
     setResult({ attempt: res.attempt, solutionMd: res.solutionMd });
@@ -157,7 +157,7 @@ function QuestionPanel({ userId, questionId, api, onSaved }: { userId: string; q
   const submitNew = (response: PracticeResponse) => {
     if (inFlight.current || unresolved) return;
     const durationSec = Math.min(86400, Math.max(0, Math.round((Date.now() - started.current) / 1000)));
-    void send({ submissionId: crypto.randomUUID(), questionId: q.id, assignmentId: null, durationSec, response });
+    void send({ submissionId: crypto.randomUUID(), questionId: q.id, expectedRevision: q.revision, assignmentId: null, durationSec, response });
   };
 
   const startOver = () => {
