@@ -97,23 +97,52 @@ export type Database = {
           },
         ]
       }
+      bookmarks: {
+        Row: {
+          created_at: string
+          question_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          question_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          question_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookmarks_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_assignment_items: {
         Row: {
           assignment_id: string
           position: number
           question_id: string
+          reason: string
           user_id: string
         }
         Insert: {
           assignment_id: string
           position: number
           question_id: string
+          reason?: string
           user_id: string
         }
         Update: {
           assignment_id?: string
           position?: number
           question_id?: string
+          reason?: string
           user_id?: string
         }
         Relationships: [
@@ -163,6 +192,30 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_checklist: {
+        Row: {
+          done: boolean
+          study_day: string
+          task: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          done?: boolean
+          study_day: string
+          task: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          done?: boolean
+          study_day?: string
+          task?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       marking_policies: {
         Row: {
           exam_year: number
@@ -201,6 +254,95 @@ export type Database = {
           verified_on?: string | null
         }
         Relationships: []
+      }
+      mini_test_items: {
+        Row: {
+          draft: Json | null
+          position: number
+          question_id: string
+          revision: string
+          submission_id: string
+          test_id: string
+          user_id: string
+        }
+        Insert: {
+          draft?: Json | null
+          position: number
+          question_id: string
+          revision: string
+          submission_id?: string
+          test_id: string
+          user_id: string
+        }
+        Update: {
+          draft?: Json | null
+          position?: number
+          question_id?: string
+          revision?: string
+          submission_id?: string
+          test_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mini_test_items_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mini_test_items_test_id_user_id_fkey"
+            columns: ["test_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "mini_tests"
+            referencedColumns: ["id", "user_id"]
+          },
+        ]
+      }
+      mini_tests: {
+        Row: {
+          deadline_at: string
+          duration_sec: number
+          finalized_at: string | null
+          id: string
+          result: Json | null
+          started_at: string
+          status: string
+          topic_id: string | null
+          user_id: string
+        }
+        Insert: {
+          deadline_at: string
+          duration_sec: number
+          finalized_at?: string | null
+          id?: string
+          result?: Json | null
+          started_at?: string
+          status?: string
+          topic_id?: string | null
+          user_id: string
+        }
+        Update: {
+          deadline_at?: string
+          duration_sec?: number
+          finalized_at?: string | null
+          id?: string
+          result?: Json | null
+          started_at?: string
+          status?: string
+          topic_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mini_tests_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "syllabus_topics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       papers: {
         Row: {
@@ -440,7 +582,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ensure_daily_assignment: { Args: { p_user_id: string }; Returns: string }
+      mark_for_revision: {
+        Args: { p_question_id: string; p_user_id: string }
+        Returns: undefined
+      }
       pilot_import: { Args: { p_payload: Json }; Returns: Json }
+      practice_eligible_questions: {
+        Args: never
+        Returns: {
+          question_id: string
+          topic_id: string
+        }[]
+      }
       practice_lookup_submission: {
         Args: {
           p_request_hash: string
