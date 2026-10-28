@@ -8,10 +8,10 @@ import { Input } from "@/components/ui/input";
  * server-side against a versioned answer key (submitPracticeAttempt).
  */
 export function PracticeAnswerInput({
-  type, options = ["A", "B", "C", "D"], disabled, onSubmit,
-}: { type: QuestionType; options?: string[]; disabled?: boolean; onSubmit: (r: AttemptResponse) => void }) {
-  const [picked, setPicked] = useState<string[]>([]);
-  const [nat, setNat] = useState("");
+  type, options = ["A", "B", "C", "D"], disabled, onSubmit, submitLabel = "Submit answer", initial,
+}: { type: QuestionType; options?: string[]; disabled?: boolean; onSubmit: (r: AttemptResponse) => void; submitLabel?: string; initial?: { options?: string[]; value?: string } }) {
+  const [picked, setPicked] = useState<string[]>(initial?.options ?? []);
+  const [nat, setNat] = useState(initial?.value ?? "");
   const toggle = (o: string) =>
     setPicked((p) => (type === "MCQ" ? [o] : p.includes(o) ? p.filter((x) => x !== o) : [...p, o]));
   const ready = type === "NAT" ? /^-?\d+(\.\d+)?$/.test(nat.trim()) : picked.length > 0;
@@ -39,7 +39,7 @@ export function PracticeAnswerInput({
           </div>
         )}
       </fieldset>
-      <Button type="submit" disabled={disabled || !ready} className="w-full sm:w-auto">Submit answer</Button>
+      <Button type="submit" disabled={disabled || !ready} className="w-full sm:w-auto">{submitLabel}</Button>
     </form>
   );
 }
