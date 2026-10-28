@@ -474,6 +474,7 @@ export type Database = {
         Args: { p_question_id: string }
         Returns: Json
       }
+      practice_source: { Args: { p_question_id: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
