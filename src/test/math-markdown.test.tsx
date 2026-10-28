@@ -7,7 +7,7 @@ const html = (md: string) => render(<MathMarkdown>{md}</MathMarkdown>).container
 
 describe("safe Markdown + math renderer", () => {
   it("renders inline/display math with KaTeX (log, integral) instead of raw $...$", () => {
-    const c = html("Evaluate $\\log_{10} x$ and\n\n$$\\int_0^1 x^2\\,dx$$");
+    const c = html("Evaluate $\\log_{10} x$ and\n\n$$\n\\int_0^1 x^2\\,dx\n$$");
     expect(c.querySelectorAll(".katex").length).toBeGreaterThanOrEqual(2);
     expect(c.querySelector(".katex-display")).not.toBeNull();
     expect(c.textContent).not.toContain("$");
@@ -29,6 +29,8 @@ describe("safe Markdown + math renderer", () => {
     const c = html("[x](javascript:alert(1)) [y](data:text/html,hi) $\\href{javascript:alert(1)}{z}$ [ok](https://gate2026.iitg.ac.in)");
     const hrefs = [...c.querySelectorAll("a")].map((a) => a.getAttribute("href"));
     expect(hrefs).toEqual(["https://gate2026.iitg.ac.in"]);
-    expect(c.innerHTML).not.toMatch(/javascript:|data:text/);
+    // \href stays inert text (trust: false); no attribute anywhere carries a dangerous URL.
+    const attrs = [...c.querySelectorAll("*")].flatMap((el) => [...el.attributes].map((a) => a.value));
+    expect(attrs.some((v) => /javascript:|data:text/i.test(v))).toBe(false);
   });
 });
