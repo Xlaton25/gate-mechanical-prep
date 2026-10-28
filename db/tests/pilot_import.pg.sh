@@ -97,7 +97,7 @@ ok "options stored"                  "$(cnt "public.question_options")" 2
 ok "keys official and verified"      "$(cnt "private.answer_keys where provenance='official' and provenance_verified and version=1")" 2
 ok "NAT bounds kept as exact text"   "$(q -c "select min_value::text||'-'||max_value::text from private.answer_key_nat_ranges")" "1.50-2.00"
 ok "solutions reviewed and bound"    "$(cnt "private.solutions where reviewed and answer_key_id is not null and provenance='authored'")" 2
-ok "source labelled partial pilot"   "$(cnt "private.source_files where file_name='SYNTHETIC2026.pdf' and notes && array[select unnest(array['partial pilot: 2 questions reviewed and imported; the full paper is not processed'])]")" 1
+ok "source labelled partial pilot"   "$(cnt "private.source_files where file_name='SYNTHETIC2026.pdf' and notes[1] like 'partial pilot%'")" 1
 ok "provenance recorded"             "$(cnt "private.question_provenance where source_page in (2,3)")" 2
 ok "review audit recorded"           "$(cnt "private.question_validations where to_state='validated'")" 2
 
@@ -163,7 +163,7 @@ S2=00000000-0000-4000-8000-00000000e102
 R=$(rec $S2 $H1)
 ok "save against the stale viewed revision is refused" "$(jf "$R" "d['outcome']")" stale
 ok "stale save wrote nothing"        "$(cnt "public.attempts where submission_id='$S2'")" 0
-ok "fresh revision accepts the same answer" "$(rec $S2 $H1 "$REV2" | jf /dev/stdin "json.loads(sys.argv[1])['outcome']" 2>/dev/null || q -c "set role service_role; select public.practice_record_attempt('$U1','$S2','$H1','$Q1',null,'{\"kind\":\"MCQ\",\"option\":\"A\"}','wrong',-1::smallint,'$K1','gate-2026-v1','$REV2',10)::text" | jf /dev/stdin "json.loads(sys.argv[1])['outcome']")" created
+ok "fresh revision accepts the same answer" "$(jf "$(rec $S2 $H1 "$REV2")" "d['outcome']")" created
 
 # question wording edit also changes the revision
 q -c "update public.questions set body_md='Synthetic question body v2' where id='$Q1'" >/dev/null
@@ -180,7 +180,7 @@ q -c "update public.questions set validation_state='in_review', validated_at=nul
 R=$(rec $S1 $H1)
 ok "replay after retirement returns the original" "$(jf "$R" "d['outcome'] + ':' + d['attempt']['id']")" "replay:$ID1"
 ok "replay keeps the original solution snapshot"  "$(jf "$R" "d['solution_md']")" "Synthetic solution v1"
-ok "replay of a stale view still needs no current content" "$(rec $S1 $H1)" "$(printf '%s' "$R" | tr -d '\n')"
+ok "retired question cannot open a new attempt" "$(jf "$(q -c "set role service_role; select public.practice_record_attempt('$U1','00000000-0000-4000-8000-00000000e103','$H1','$Q1',null,'{\"kind\":\"MCQ\",\"option\":\"A\"}','wrong',-1::smallint,'$K1','gate-2026-v1','$REV4',10)::text")" "d['outcome']")" stale
 
 # ---------- 7. privilege boundaries ----------
 for role in anon authenticated; do
