@@ -453,6 +453,7 @@ export type Database = {
         Args: { p_question_id: string }
         Returns: string
       }
+      practice_question_view: { Args: { p_question_id: string }; Returns: Json }
       practice_record_attempt: {
         Args: {
           p_assignment_id: string
