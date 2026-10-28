@@ -1,8 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
+  accountMatches,
+  boundListSchema,
+  boundSubmitSchema,
   questionIdSchema,
-  submitInputSchema,
   type DetailResult,
   type ListResult,
   type PracticeError,
@@ -19,8 +21,10 @@ type PaperJoin = { exam_year: number; session_label: string } | null;
 /** Validated, published questions only — enforced by RLS on the learner's own session. */
 export const listPracticeQuestions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<ListResult> => {
+  .inputValidator((d: unknown) => boundListSchema.parse(d))
+  .handler(async ({ data, context }): Promise<ListResult> => {
     const { supabase, userId } = context;
+    if (!accountMatches(data.expectedUserId, userId)) return { ok: false, error: "account_mismatch" };
     const [qs, at] = await Promise.all([
       supabase
         .from("questions")
@@ -57,6 +61,7 @@ export const getPracticeQuestion = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => questionIdSchema.parse(d))
   .handler(async ({ data, context }): Promise<DetailResult> => {
+    if (!accountMatches(data.expectedUserId, context.userId)) return { ok: false, error: "account_mismatch" };
     const { data: q, error } = await context.supabase
       .from("questions")
       .select("id, number, type, marks, body_md, papers!inner(exam_year, session_label), question_options(option_id, body_md)")
@@ -82,10 +87,11 @@ export const getPracticeQuestion = createServerFn({ method: "GET" })
 /** Scores on the server and saves before returning any solution. */
 export const submitPracticeAttempt = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => submitInputSchema.parse(d))
+  .inputValidator((d: unknown) => boundSubmitSchema.parse(d))
   .handler(async ({ data, context }): Promise<SubmitResult> => {
+    if (!accountMatches(data.expectedUserId, context.userId)) return { ok: false, error: "account_mismatch" };
     if (!process.env["SUPABASE_SERVICE_ROLE_KEY"]) return { ok: false, error: "server_error" };
-    const { submitAttempt } = await import("@/server/practice/submit.server");
+    const { submitBound } = await import("@/server/practice/submit.server");
     const { createAdminPracticeStore } = await import("@/server/practice/store.server");
-    return submitAttempt(createAdminPracticeStore(), context.userId, data);
+    return submitBound(createAdminPracticeStore(), context.userId, data);
   });

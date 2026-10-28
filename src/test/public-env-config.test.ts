@@ -23,6 +23,12 @@ describe("public Supabase browser config", () => {
     expect(vars["VITE_SUPABASE_PUBLISHABLE_KEY"]?.startsWith("sb_publishable_")).toBe(true);
   });
 
+  it("holds only allowlisted public fields", () => {
+    const allowed = ["VITE_SUPABASE_URL", "VITE_SUPABASE_PUBLISHABLE_KEY", "VITE_SUPABASE_PROJECT_ID", "SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY", "SUPABASE_PROJECT_ID"];
+    expect(Object.keys(vars).filter((k) => !allowed.includes(k))).toEqual([]);
+    for (const k of ["VITE_SUPABASE_PUBLISHABLE_KEY", "SUPABASE_PUBLISHABLE_KEY"]) if (vars[k]) expect(vars[k]!.startsWith("sb_publishable_")).toBe(true);
+  });
+
   it("contains no secret keys", () => {
     expect(env).not.toMatch(/SERVICE_ROLE|sb_secret_/i);
   });

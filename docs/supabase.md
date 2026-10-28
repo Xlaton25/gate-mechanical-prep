@@ -10,6 +10,7 @@ Canonical, reviewable SQL stays in `db/migrations/`. It was applied to GATE **on
 | `20261027160935` | `select 1` (no-op; created the generated types file) |
 | `20261028040618` | `db/migrations/20261027000001_core_schema.sql` + `000002_security.sql` + `000003_integrity_hardening.sql` |
 | `20261028163911` | `db/migrations/20261028000004_practice_submission.sql` (own migration, unchanged) |
+| `20261028165705` | `db/migrations/20261028000005_practice_hardening.sql` (own migration, unchanged) |
 
 **Do not** run `db/migrations/*` against GATE again (e.g. via `supabase db push`) — the schema already exists and the statements are not idempotent. Use `supabase/migrations/` (Lovable-managed) as the remote history; new changes are new migrations.
 
@@ -42,7 +43,14 @@ Canonical, reviewable SQL stays in `db/migrations/`. It was applied to GATE **on
 - `attempts` gains `submission_id` (unique per user), `request_hash` (same ID + altered payload → conflict), `context_fingerprint` (md5 of question/options/latest key/policy at scoring time).
 - RPCs `practice_scoring_context`, `practice_record_attempt`, `practice_solution` (+ `private.practice_context`): SECURITY INVOKER, `search_path=''`, EXECUTE revoked from PUBLIC/anon/authenticated, granted to service_role only. Latest key version only — a newer unverified key blocks scoring (no fallback). Record re-derives the context under a share lock and returns `stale` if anything changed.
 - Live read-only check after apply: all 4 functions invoker, empty search_path, anon/authenticated execute = false, service_role = true; policies 2026 + 2027 verified; 0 attempt rows.
-- Rehearsal: `db/tests/practice_submission.rehearsal.mjs` (26 checks, PGlite with simulated roles, synthetic ephemeral fixture) passed in the Lovable sandbox. Not covered: true concurrent inserts (PGlite is single-connection; the unique constraint + `on conflict do nothing` path is reasoned, not raced). Known limit: a key inserted concurrently with a save is not locked out by the question share lock; the fingerprint check catches any change committed before the save.
+- Rehearsal: `db/tests/practice_submission.rehearsal.mjs` (26 checks, PGlite with simulated roles, synthetic ephemeral fixture) passed in the Lovable sandbox. Not covered: true concurrent inserts (PGlite is single-connection; the unique constraint + `on conflict do nothing` path is reasoned, not raced). (This limit is closed by 000005.)
+
+## Milestone 3b — practice hardening (000005)
+- Replay first: `practice_lookup_submission(user, submission, hash)` runs before any current content is required; same hash → original attempt, altered hash → conflict, even if the question was retired or the key unverified since.
+- Scoring-content race closed: `practice_record_attempt` takes `SHARE` locks (fixed order) on `marking_policies, papers, questions, question_options, private.answer_keys, private.answer_key_nat_ranges, private.solutions`, then re-derives the context. Writers (`ROW EXCLUSIVE`) wait for in-flight saves and vice versa; saves never block each other. `lock_timeout` 5s → sanitized `server_error` (client retries the same frozen submission). Content imports should run outside peak practice and lock tables in the same order to avoid deadlocks.
+- Solution snapshot: `private.solutions` gains `answer_key_id` (same-question FK) and `reviewed`; rows are immutable (trigger; only reviewed false→true). `attempts.solution_id` stores the reviewed solution for the exact key version scored (composite FK), or null. Replay returns that snapshot. `practice_solution` (newest arbitrary) was dropped.
+- Verified: `db/tests/practice_hardening.pg.sh` — real PostgreSQL 17, separate concurrent sessions, synthetic throwaway cluster: 26/26 passed (writer blocked by in-flight save; save during uncommitted newer key → stale; 3 simultaneous identical retries → 1 row; different saves not serialised; replay after retirement; immutability; privileges). Live read-only check after apply: all practice functions invoker, `search_path=""`, anon/authenticated execute = false; 0 attempts/solutions/questions. pgTAP suite and live signed-in submission still unrun.
+- Parity: `src/test/migration-parity.test.ts` asserts each applied file equals its canonical source (comments/whitespace ignored).
 
 ## App usage (milestone 2)
 - Email/password auth via the browser Supabase client; email provider settings are managed in the Supabase dashboard (Authentication → Providers / URL Configuration). Add the preview and future Netlify URLs (with `/auth`) to Redirect URLs for confirmation links.

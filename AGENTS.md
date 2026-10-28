@@ -17,7 +17,7 @@
 - Answer checking and keys are server-only — keys must never reach the client.
 - Source statuses exclude "verified" until validation tooling exists.
 - No PDFs or credentials in git (.gitignore enforces *.pdf, *.zip, .env.*). `.env` IS tracked and may hold only public browser config (URL, publishable key) — hosted builds need it; a test rejects secrets in it.
-- Canonical SQL lives in db/migrations; the owned GATE project received 000001–000003 as ONE combined applied migration `20261028040618` (mapping in docs/supabase.md); later files each get their own migration (000004 → `20261028163911`) — never re-run db/migrations against the remote.
+- Canonical SQL lives in db/migrations; the owned GATE project received 000001–000003 as ONE combined applied migration `20261028040618` (mapping in docs/supabase.md); later files each get their own migration (000004 → `20261028163911`, 000005 → `20261028165705`); a parity test compares them — never re-run db/migrations against the remote.
 - Auth state comes only from AuthProvider in src/lib/auth.tsx (single listener) — avoids competing subscribers and stale sessions.
 - Account preferences go through the PreferencesStore port with the user session (RLS), never the admin client; updates send only preference columns.
 - Server-only code lives in src/server/ with *.server.ts names — double guard keeps it out of client bundles.
@@ -26,3 +26,7 @@
 - Docs live in docs/ (roadmap, architecture, intake, integration-checklist).
 - Scoring/saving goes through service-role-only invoker RPCs (`practice_*`) called from `src/server/practice/*.server.ts`; learners never get EXECUTE on them — keys/solutions stay in `private`.
 - Server functions get the bearer via `attachSupabaseAuth` in src/start.ts and verify it with `requireSupabaseAuth`; user ID always comes from the token, never the body.
+- Every practice call sends `expectedUserId`; the server rejects it when it differs from the verified token (never derives identity from it) — the attacher reads the session asynchronously, so a switch mid-call could otherwise act as the new account.
+- Practice saves: replay lookup before content checks; SHARE-lock all scoring-content tables inside the record RPC; solutions are immutable and snapshotted per attempt — keeps retries and shown solutions consistent with the saved score.
+- Client retries resend the exact frozen SubmitInput (incl. duration) until a definite outcome — the request hash covers every field.
+- Question/option/solution text renders only through MathMarkdown (no raw HTML, untrusted KaTeX).

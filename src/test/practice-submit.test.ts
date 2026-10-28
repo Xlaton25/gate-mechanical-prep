@@ -22,13 +22,14 @@ const input = (response: SubmitInput["response"], over: Partial<SubmitInput> = {
 function fakeStore(ctx: unknown, recordOutcome: (a: RecordArgs) => unknown = (a) => ({
   outcome: "created",
   attempt: { id: "att-1", question_id: a.questionId, status: a.status, marks_thirds: a.marksThirds, submitted_at: "2026-10-28T10:00:00Z" },
+  solution_md: "Synthetic solution",
 })) {
   const calls: string[] = [];
   const store: PracticeStore & { recorded: RecordArgs[]; calls: string[] } = {
     recorded: [], calls,
+    lookup: vi.fn(async () => { calls.push("lookup"); return null; }),
     loadContext: vi.fn(async () => { calls.push("context"); return ctx; }),
     record: vi.fn(async (a: RecordArgs) => { calls.push("record"); store.recorded.push(a); return recordOutcome(a); }),
-    loadSolution: vi.fn(async () => { calls.push("solution"); return "Synthetic solution"; }),
   };
   return store;
 }
@@ -58,7 +59,7 @@ describe("server scoring + save", () => {
   it("solution is loaded only after the attempt is saved", async () => {
     const s = fakeStore(baseCtx());
     const r = await submitAttempt(s, USER, input({ kind: "MCQ", option: "B" }));
-    expect(s.calls).toEqual(["context", "record", "solution"]);
+    expect(s.calls).toEqual(["lookup", "context", "record"]);
     expect(r).toMatchObject({ ok: true, solutionMd: "Synthetic solution", attempt: { marksThirds: 3 } });
   });
   it("invalid payloads are rejected and never persisted", async () => {
@@ -66,7 +67,6 @@ describe("server scoring + save", () => {
       const s = fakeStore(baseCtx());
       expect(await submitAttempt(s, USER, input(resp as SubmitInput["response"]))).toEqual({ ok: false, error: "invalid_response" });
       expect(s.record).not.toHaveBeenCalled();
-      expect(s.loadSolution).not.toHaveBeenCalled();
     }
   });
   it("blank is saved as unanswered with null response", async () => {
@@ -117,7 +117,6 @@ describe("idempotency and failure outcomes", () => {
     for (const outcome of ["conflict", "stale"] as const) {
       const s = fakeStore(baseCtx(), () => ({ outcome }));
       expect(await submitAttempt(s, USER, input({ kind: "MCQ", option: "B" }))).toEqual({ ok: false, error: outcome });
-      expect(s.loadSolution).not.toHaveBeenCalled();
     }
   });
   it("store errors are sanitized", async () => {

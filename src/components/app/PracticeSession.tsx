@@ -7,13 +7,15 @@ import { useAuth } from "@/lib/auth";
 import { getPracticeQuestion, listPracticeQuestions, submitPracticeAttempt } from "@/lib/practice.functions";
 import type { AttemptSummary, DetailResult, ListResult, PracticeResponse, SubmitError, SubmitInput, SubmitResult } from "@/lib/practice-schema";
 import { PracticeAnswerInput } from "@/components/app/PracticeAnswerInput";
+import { MathMarkdown } from "@/components/app/MathMarkdown";
 import { EmptyState, Panel } from "@/components/app/ui";
 import { Button } from "@/components/ui/button";
 
+/** Every call names the account it was issued for; the server rejects a mismatch with the verified token. */
 export interface PracticeApi {
-  list: () => Promise<ListResult>;
-  detail: (questionId: string) => Promise<DetailResult>;
-  submit: (input: SubmitInput) => Promise<SubmitResult>;
+  list: (expectedUserId: string) => Promise<ListResult>;
+  detail: (expectedUserId: string, questionId: string) => Promise<DetailResult>;
+  submit: (expectedUserId: string, input: SubmitInput) => Promise<SubmitResult>;
 }
 
 const SUBMIT_MSG: Record<SubmitError | "network", string> = {
@@ -21,8 +23,9 @@ const SUBMIT_MSG: Record<SubmitError | "network", string> = {
   invalid_response: "That answer isn't valid for this question. Nothing was saved.",
   conflict: "This submission was already used for a different answer. Submit again to record a new attempt.",
   stale: "This question changed while you were answering. Reload it and try again. Nothing was saved.",
-  server_error: "We couldn't save your answer. Try again — your retry won't be counted twice.",
-  network: "Couldn't reach the server. Try again — your retry won't be counted twice.",
+  server_error: "We couldn't confirm your answer was saved. Retry — it won't be counted twice.",
+  account_mismatch: "Your account changed before this was sent. Nothing was saved.",
+  network: "Couldn't reach the server. Retry — it won't be counted twice.",
 };
 
 const fmtMarks = (thirds: number) => {
@@ -36,9 +39,9 @@ export function useDefaultPracticeApi(): PracticeApi {
   const detail = useServerFn(getPracticeQuestion);
   const submit = useServerFn(submitPracticeAttempt);
   return {
-    list: () => list(),
-    detail: (questionId) => detail({ data: { questionId } }),
-    submit: (input) => submit({ data: input }),
+    list: (expectedUserId) => list({ data: { expectedUserId } }),
+    detail: (expectedUserId, questionId) => detail({ data: { expectedUserId, questionId } }),
+    submit: (expectedUserId, submission) => submit({ data: { expectedUserId, submission } }),
   };
 }
 
@@ -57,7 +60,7 @@ export function PracticeSession({ api }: { api: PracticeApi }) {
 }
 
 function SignedInPractice({ userId, api }: { userId: string; api: PracticeApi }) {
-  const list = useQuery({ queryKey: ["practice", userId, "list"], queryFn: api.list });
+  const list = useQuery({ queryKey: ["practice", userId, "list"], queryFn: () => api.list(userId) });
   const [selected, setSelected] = useState<string | null>(null);
 
   if (list.isPending) return <div className="surface h-40 animate-pulse" aria-busy="true" aria-label="Loading questions" />;
@@ -102,54 +105,76 @@ function SignedInPractice({ userId, api }: { userId: string; api: PracticeApi })
 }
 
 function QuestionPanel({ userId, questionId, api, onSaved }: { userId: string; questionId: string; api: PracticeApi; onSaved: () => void }) {
-  const detail = useQuery({ queryKey: ["practice", userId, "q", questionId], queryFn: () => api.detail(questionId) });
+  const detail = useQuery({ queryKey: ["practice", userId, "q", questionId], queryFn: () => api.detail(userId, questionId) });
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ attempt: AttemptSummary; solutionMd: string | null } | null>(null);
   const [round, setRound] = useState(0);
-  const submission = useRef<{ id: string; payload: string } | null>(null);
+  // Unresolved submission: the exact input first sent (ID, duration, answer), resent unchanged
+  // on retry until a definite outcome or an explicit new attempt. Never recomputed.
+  const [unresolved, setUnresolved] = useState<SubmitInput | null>(null);
+  const inFlight = useRef(false);
   const started = useRef(Date.now());
-  const alive = useRef(true);
-  useEffect(() => () => { alive.current = false; }, []);
+  const alive = useRef(false);
+  useEffect(() => {
+    alive.current = true; // set in setup so StrictMode's effect replay re-enables completions
+    return () => { alive.current = false; };
+  }, []);
 
   if (detail.isPending) return <div className="surface h-60 animate-pulse" aria-busy="true" aria-label="Loading question" />;
   if (detail.isError || !detail.data.ok)
     return <Panel title="Question"><p className="text-sm text-muted-foreground">This question isn't available.</p></Panel>;
   const q = detail.data.question;
 
-  const submit = async (response: PracticeResponse) => {
-    const payload = JSON.stringify(response);
-    // Retries of the same answer reuse the submission ID so the server records it once.
-    if (!submission.current || submission.current.payload !== payload) submission.current = { id: crypto.randomUUID(), payload };
-    const durationSec = Math.min(86400, Math.round((Date.now() - started.current) / 1000));
+  const send = async (input: SubmitInput) => {
+    if (inFlight.current) return; // synchronous guard against rapid double clicks
+    inFlight.current = true;
+    setUnresolved(input);
     setPending(true);
     setError(null);
     let res: SubmitResult | null = null;
     try {
-      res = await api.submit({ submissionId: submission.current.id, questionId: q.id, assignmentId: null, durationSec, response });
+      res = await api.submit(userId, input);
     } catch {
       res = null;
+    } finally {
+      inFlight.current = false;
     }
     // Panel is keyed by account and question; an unmounted (switched) panel drops the completion.
     if (!alive.current) return;
     setPending(false);
     if (!res) return setError(SUBMIT_MSG.network);
     if (!res.ok) {
-      if (res.error === "conflict") submission.current = null;
+      // Only an unknown outcome keeps the frozen input for a safe retry.
+      if (res.error !== "server_error") setUnresolved(null);
       return setError(SUBMIT_MSG[res.error]);
     }
-    submission.current = null;
+    setUnresolved(null);
     setResult({ attempt: res.attempt, solutionMd: res.solutionMd });
     onSaved();
   };
 
+  const submitNew = (response: PracticeResponse) => {
+    if (inFlight.current || unresolved) return;
+    const durationSec = Math.min(86400, Math.max(0, Math.round((Date.now() - started.current) / 1000)));
+    void send({ submissionId: crypto.randomUUID(), questionId: q.id, assignmentId: null, durationSec, response });
+  };
+
+  const startOver = () => {
+    setResult(null);
+    setUnresolved(null);
+    setError(null);
+    setRound((r) => r + 1);
+    started.current = Date.now();
+  };
+
   return (
     <Panel title={`${q.year}${q.session ? ` ${q.session}` : ""} · Question ${q.number} · ${q.marks} mark${q.marks === 1 ? "" : "s"}`}>
-      <div className="font-math whitespace-pre-wrap text-base leading-relaxed">{q.bodyMd}</div>
+      <MathMarkdown className="text-base leading-relaxed">{q.bodyMd}</MathMarkdown>
       {q.options.length > 0 && (
         <ol className="mt-4 space-y-2">
           {q.options.map((o) => (
-            <li key={o.id} className="rounded-xl border border-border p-3 text-sm"><span className="font-semibold">{o.id}.</span> <span className="whitespace-pre-wrap">{o.bodyMd}</span></li>
+            <li key={o.id} className="flex gap-2 rounded-xl border border-border p-3 text-sm"><span className="font-semibold">{o.id}.</span><MathMarkdown className="min-w-0 flex-1">{o.bodyMd}</MathMarkdown></li>
           ))}
         </ol>
       )}
@@ -161,17 +186,23 @@ function QuestionPanel({ userId, questionId, api, onSaved }: { userId: string; q
             </p>
             <p className="text-xs text-muted-foreground">Saved {new Date(result.attempt.submittedAt).toLocaleString()}</p>
             {result.solutionMd ? (
-              <div className="rounded-xl bg-secondary p-4 text-sm whitespace-pre-wrap">{result.solutionMd}</div>
+              <MathMarkdown className="rounded-xl bg-secondary p-4 text-sm">{result.solutionMd}</MathMarkdown>
             ) : (
               <p className="text-sm text-muted-foreground">No reviewed solution is available for this question yet.</p>
             )}
-            <Button variant="outline" onClick={() => { setResult(null); setRound((r) => r + 1); started.current = Date.now(); }}>Attempt again</Button>
+            <Button variant="outline" onClick={startOver}>Attempt again</Button>
           </div>
         ) : (
           <>
-            <PracticeAnswerInput key={round} type={q.type} options={q.options.map((o) => o.id)} disabled={pending} onSubmit={submit} />
+            <PracticeAnswerInput key={round} type={q.type} options={q.options.map((o) => o.id)} disabled={pending || unresolved !== null} onSubmit={submitNew} />
             {pending && <p className="mt-3 text-sm text-muted-foreground" aria-live="polite">Saving…</p>}
             {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
+            {unresolved && !pending && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button onClick={() => void send(unresolved)}>Retry saving</Button>
+                <Button variant="ghost" onClick={startOver}>Discard and answer again</Button>
+              </div>
+            )}
           </>
         )}
       </div>
