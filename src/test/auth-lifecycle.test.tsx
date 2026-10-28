@@ -155,13 +155,13 @@ describe("account switch isolation", () => {
     };
     const ui = (uid: string) => <AccountSettings key={uid} userId={uid} email={null} onSignOut={() => {}} store={store} />;
     const { rerender } = render(ui(A));
-    await waitFor(() => expect(screen.getByLabelText("Daily study minutes")).toHaveValue(90));
+    await waitFor(() => expect(screen.getByLabelText("Daily study minutes")).toHaveValue("90"));
     fireEvent.click(screen.getByRole("button", { name: "Save to account" }));
     expect(await screen.findByText("Saved to your account.")).toBeInTheDocument();
     rerender(ui(B));
     expect(screen.queryByText("Saved to your account.")).not.toBeInTheDocument();
     expect(screen.queryByDisplayValue("90")).not.toBeInTheDocument();
-    await waitFor(() => expect(screen.getByLabelText("Daily study minutes")).toHaveValue(30));
+    await waitFor(() => expect(screen.getByLabelText("Daily study minutes")).toHaveValue("30"));
     expect(store.update).toHaveBeenCalledTimes(1);
     expect(vi.mocked(store.update).mock.calls[0][0]).toBe(A);
   });
