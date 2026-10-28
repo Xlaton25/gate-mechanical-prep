@@ -29,7 +29,7 @@ export function DataNotice({ children }: { children?: ReactNode }) {
     <div role="note" className="mb-6 flex gap-3 rounded-2xl border border-warning/40 bg-warning-soft p-4 text-sm text-warning-foreground">
       <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
       <p>
-        {children ?? "All learning data is currently unverified and unimported. No questions have been validated yet, so scores, progress and analytics are not available."}
+        {children ?? "Only a ten-question ME2026 pilot is validated and imported so far; the rest of the 26-paper archive is unverified. Scores and progress shown here come from your own saved attempts only."}
       </p>
     </div>
   );

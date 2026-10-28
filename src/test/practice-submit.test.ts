@@ -133,6 +133,36 @@ describe("idempotency and failure outcomes", () => {
   });
 });
 
+describe("the viewed revision must still be current", () => {
+  it("a stale view is refused before anything is scored or saved", async () => {
+    // The fingerprint covers question wording, option bodies, key and policy; the SQL
+    // rehearsal (db/tests/pilot_import.pg.sh) proves each of those edits changes it.
+    const s = fakeStore(baseCtx({ fingerprint: "a".repeat(32) }));
+    expect(await submitAttempt(s, USER, input({ kind: "MCQ", option: "B" }))).toEqual({ ok: false, error: "stale" });
+    expect(s.record).not.toHaveBeenCalled();
+  });
+  it("an unchanged view is scored and saved", async () => {
+    const s = fakeStore(baseCtx());
+    expect(await submitAttempt(s, USER, input({ kind: "MCQ", option: "B" }))).toMatchObject({ ok: true, outcome: "created" });
+  });
+  it("a lost-response retry returns the original row even after the view went stale", async () => {
+    const row = { outcome: "replay", attempt: { id: "orig", question_id: QID, status: "correct", marks_thirds: 3, submitted_at: "2026-10-28T09:00:00Z" }, solution_md: "Snapshot" };
+    const s = fakeStore(baseCtx({ fingerprint: "a".repeat(32) }));
+    s.lookup = vi.fn(async () => row);
+    expect(await submitAttempt(s, USER, input({ kind: "MCQ", option: "B" }))).toMatchObject({ ok: true, outcome: "replay", attempt: { id: "orig" } });
+    expect(s.record).not.toHaveBeenCalled();
+  });
+  it("the request hash binds the viewed revision", async () => {
+    const a = await requestHash(input({ kind: "MCQ", option: "B" }));
+    expect(await requestHash(input({ kind: "MCQ", option: "B" }, { expectedRevision: "a".repeat(32) }))).not.toBe(a);
+  });
+  it("a malformed revision never reaches the server", () => {
+    for (const bad of [undefined, "", "f".repeat(31), "F".repeat(32), 42]) {
+      expect(submitInputSchema.safeParse(input({ kind: "MCQ", option: "B" }, { expectedRevision: bad as never })).success).toBe(false);
+    }
+  });
+});
+
 describe("gate-2026-v1 policy", () => {
   const q = (marks: 1 | 2) => ({ type: "MCQ" as const, marks, paperYear: 2026, optionIds: ["A", "B", "C", "D"] });
   const k = { keyVersionId: "synthetic", type: "MCQ" as const, correct: "B" };
