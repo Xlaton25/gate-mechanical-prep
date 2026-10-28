@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { AuthForm } from "@/components/app/AuthForm";
+import { SignOutControl } from "@/components/app/SignOutControl";
 import { meta } from "@/components/app/ui";
 import { supabaseAuthClient, useAuth } from "@/lib/auth";
 
@@ -22,9 +23,9 @@ function AuthPage() {
         {auth.status === "signed_in" && (
           <div className="grid gap-4">
             <p>Signed in as <span className="font-medium">{auth.user?.email ?? "your account"}</span>.</p>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap items-start gap-3">
               <Button asChild><Link to="/settings">Go to settings</Link></Button>
-              <Button variant="outline" onClick={() => auth.signOut()}>Sign out</Button>
+              <SignOutControl onSignOut={auth.signOut} pending={auth.signOutPending} error={auth.signOutError} />
             </div>
           </div>
         )}

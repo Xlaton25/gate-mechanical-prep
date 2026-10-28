@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MailCheck } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,9 @@ export function AuthForm({ client, onSignedIn }: { client: AuthClient; onSignedI
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmFor, setConfirmFor] = useState<string | null>(null);
+  const mounted = useRef(true);
+  const inFlight = useRef(false);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   if (confirmFor) {
     return (
@@ -34,24 +37,33 @@ export function AuthForm({ client, onSignedIn }: { client: AuthClient; onSignedI
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pending) return;
+    if (inFlight.current) return;
     const v = schema.safeParse({ email, password });
     if (!v.success) { setError(v.error.issues[0]?.message ?? "Check your details."); return; }
+    const submittedMode = mode;
+    inFlight.current = true;
     setPending(true);
     setError(null);
-    if (mode === "signin") {
-      const r = await client.signIn(v.data.email, v.data.password);
-      setPending(false);
-      if (r.error) { setError(r.error); return; }
-      setPassword("");
-      onSignedIn?.();
-    } else {
-      const r = await client.signUp(v.data.email, v.data.password);
-      setPending(false);
-      if (r.error) { setError(r.error); return; }
-      setPassword("");
-      if (r.needsConfirmation) setConfirmFor(v.data.email);
-      else onSignedIn?.();
+    try {
+      if (submittedMode === "signin") {
+        const r = await client.signIn(v.data.email, v.data.password);
+        if (!mounted.current) return;
+        if (r.error) { setError(r.error); return; }
+        setPassword("");
+        onSignedIn?.();
+      } else {
+        const r = await client.signUp(v.data.email, v.data.password);
+        if (!mounted.current) return;
+        if (r.error) { setError(r.error); return; }
+        setPassword("");
+        if (r.needsConfirmation) setConfirmFor(v.data.email);
+        else onSignedIn?.();
+      }
+    } catch {
+      if (mounted.current) setError("Something went wrong. Please try again.");
+    } finally {
+      inFlight.current = false;
+      if (mounted.current) setPending(false);
     }
   };
 
@@ -64,8 +76,9 @@ export function AuthForm({ client, onSignedIn }: { client: AuthClient; onSignedI
             role="tab"
             type="button"
             aria-selected={mode === m}
-            onClick={() => { setMode(m); setError(null); }}
-            className={`tap rounded-lg text-sm font-medium transition-colors ${mode === m ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+            disabled={pending}
+            onClick={() => { if (pending) return; setMode(m); setError(null); }}
+            className={`tap rounded-lg text-sm font-medium transition-colors disabled:opacity-60 ${mode === m ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
           >
             {m === "signin" ? "Sign in" : "Create account"}
           </button>
