@@ -3,6 +3,8 @@
 # Starts a throwaway local cluster in /tmp, simulates Supabase roles, uses ONLY synthetic rows,
 # and never touches a remote project. Usage: bash db/tests/practice_hardening.pg.sh
 set -euo pipefail
+# initdb refuses root; re-run as an unprivileged user when needed.
+if [ "$(id -u)" = 0 ]; then exec su -s /bin/bash nobody -c "PATH=$PATH bash $(readlink -f "$0")"; fi
 DIR=$(mktemp -d /tmp/pgrehearsal.XXXX)
 M="$(cd "$(dirname "$0")/../migrations" && pwd)"
 PORT=${PGPORT_REHEARSAL:-55439}
