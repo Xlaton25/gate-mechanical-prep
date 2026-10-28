@@ -9,7 +9,7 @@ Repo: https://github.com/Xlaton25/gate-mechanical-prep (`main`, public by owner'
 - Done (milestone 1): schema + RLS (`db/`), server-only scoring (`src/server/scoring`), Asia/Kolkata study-day logic.
 - Done (milestone 2): owned Supabase **GATE** linked; combined schema migration applied (see `docs/supabase.md`); `/auth` email/password sign-in/sign-up with confirmation state and sign-out; signed-in Settings persist daily minutes, timezone and reset time to `user_preferences`.
 - Not verified: a real sign-up, confirmation email, sign-in and saved preference against GATE (automation created no accounts and sent no email); pgTAP on Supabase; live Netlify deploy.
-- Done (milestone 3): `/practice` pilot practice — authenticated list/detail/submit server functions, server-side scoring with `gate-2026-v1`/`gate-2027-v1`, idempotent saves, solution only after save. No questions are imported yet, so it shows an honest empty state.
+- Done (milestone 3): `/practice` pilot practice — authenticated list/detail/submit server functions, server-side scoring with `gate-2026-v1`/`gate-2027-v1`, idempotent saves, solution only after save. No questions are imported yet, so it shows an honest empty state. Hardening (000005): replay-first retries with frozen inputs, account-bound calls, scoring-content locks, per-attempt solution snapshots, safe Markdown/KaTeX/table rendering. Solutions now need `answer_key_id` + `reviewed=true` to be shown.
 - Not verified live: a signed-in submission (no validated content and no automated sign-in on this external project). Live-checked: unauthenticated list/submit are rejected; RPC privileges.
 - Not done: question import/validation, daily-10 scheduler, analytics, mocks, deployment.
 

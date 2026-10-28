@@ -23,6 +23,7 @@
 ## Milestone 3 — Secure pilot practice
 - [x] gate-2026-v1 policy (code + DB), authenticated list/detail/submit, idempotent transactional saves (migration 20261028163911)
 - [x] /practice pilot screen (sign-in required, empty state until content exists)
+- [x] Review hardening (migration 20261028165705): replay-first, content locks, solution snapshots, account-bound calls, frozen retries, KaTeX/table rendering
 - [ ] Private import of the separately validated 10-question 2026 pilot (owner-supplied; not in git)
 - [ ] Signed-in end-to-end submission tested against real content
 
