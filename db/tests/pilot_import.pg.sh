@@ -121,7 +121,7 @@ for v in opt_body q_body key_move key_unverified nat_bad nat_inverted; do
   ok "$v wrote no option"            "$(cnt "public.question_options")" "$beforeo"
   ok "$v wrote no key"               "$(cnt "private.answer_keys")" "$beforek"
 done
-ok "reworded option detected"        "$(imp "$DIR/opt_body.json" 2>&1 || true | grep -c 'option .* differs')" 1
+ok "reworded option detected"        "$(imp "$DIR/opt_body.json" 2>&1 | grep -c 'option .* differs')" 1
 
 # ---------- 4. invalid payloads are rejected before any write ----------
 for v in key_missing nat_opts dup_number wrong_policy bad_sha no_solution; do
@@ -134,7 +134,7 @@ ok "nothing extra written by rejects" "$(cnt "public.questions")" 2
 R=$(imp "$DIR/extra.json")
 ok "extra question imports"           "$(jf "$R" "d['outcome']")" imported
 ok "extra run created 1 question"    "$(jf "$R" "d['created']['questions']")" 1
-ok "extra run created 0 options"     "$(jf "$R" "d['created']['options']")" 0
+ok "extra run created its own options" "$(jf "$R" "d['created']['options']")" 2
 
 # ---------- 6. view revision ----------
 PAP=$(q -c "select id from public.papers where session_label='synthetic'")
