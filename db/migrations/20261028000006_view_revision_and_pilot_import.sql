@@ -478,7 +478,8 @@ begin
   end loop;
 
   -- exact re-run created nothing: leave no audit row behind either
-  if v_created = 0 then
+  if v_created = 0 and n_o + n_r + n_s + n_t = 0
+     and not exists (select 1 from private.question_provenance where import_job_id = v_job) then
     delete from private.import_jobs where id = v_job;
     return jsonb_build_object(
       'outcome', 'no-op', 'paper_id', v_paper, 'source_file_id', v_src,
