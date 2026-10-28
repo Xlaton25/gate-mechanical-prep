@@ -21,5 +21,9 @@ if [ -n "${PGTAP_SQL:-}" ]; then
   grant="grant usage on schema extensions to public; grant execute on all functions in schema extensions to public;"
   q -c "$grant" >/dev/null
 fi
-PGOPTIONS="-c search_path=public,extensions" psql -X -At -h "$DIR" -p "$PORT" -U postgres -d postgres -f "$HERE/security_integrity.test.sql" | tee "$DIR/out"
+# Only adaptation: when pgTAP was loaded from SQL (no extension control file), skip the
+# `create extension pgtap` line. Every assertion runs unchanged.
+T="$HERE/security_integrity.test.sql"
+if [ -n "${PGTAP_SQL:-}" ]; then sed '/create extension if not exists pgtap/d' "$T" > "$DIR/t.sql"; T="$DIR/t.sql"; fi
+PGOPTIONS="-c search_path=public,extensions" psql -X -At -h "$DIR" -p "$PORT" -U postgres -d postgres -f "$T" 2>&1 | tee "$DIR/out"
 ! grep -q '^not ok' "$DIR/out" && grep -q '^1\.\.43' "$DIR/out" && [ "$(grep -c '^ok' "$DIR/out")" = 43 ]
