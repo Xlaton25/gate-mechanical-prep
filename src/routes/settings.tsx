@@ -20,7 +20,7 @@ function Settings() {
       <PageHeader title="Settings" />
       {auth.status === "loading" && <p role="status" className="text-sm text-muted-foreground">Checking your session…</p>}
       {auth.status === "signed_in" && auth.user ? (
-        <AccountSettings userId={auth.user.id} email={auth.user.email} onSignOut={auth.signOut} />
+        <AccountSettings key={auth.user.id} userId={auth.user.id} email={auth.user.email} onSignOut={auth.signOut} signOutPending={auth.signOutPending} signOutError={auth.signOutError} />
       ) : auth.status !== "loading" ? (
         <LocalSettings />
       ) : null}

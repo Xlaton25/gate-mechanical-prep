@@ -1,12 +1,19 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export type AuthStatus = "loading" | "signed_out" | "signed_in" | "unavailable";
 export interface AuthUser { id: string; email: string | null }
-export interface AuthState { status: AuthStatus; user: AuthUser | null; signOut: () => Promise<void> }
+export interface AuthState {
+  status: AuthStatus;
+  user: AuthUser | null;
+  /** Resolves true only when the provider confirmed sign-out. */
+  signOut: () => Promise<boolean>;
+  signOutPending: boolean;
+  signOutError: string | null;
+}
 
-const AuthContext = createContext<AuthState>({ status: "loading", user: null, signOut: async () => {} });
+const AuthContext = createContext<AuthState>({ status: "loading", user: null, signOut: async () => false, signOutPending: false, signOutError: null });
 
 /** Port used by the sign-in form; swapped for a fake in tests. Never logs credentials. */
 export interface AuthClient {
@@ -52,45 +59,95 @@ function toUser(u: { id: string; email?: string | null } | null | undefined): Au
   return u ? { id: u.id, email: u.email ?? null } : null;
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+type SessionLike = { user?: { id: string; email?: string | null } | null } | null;
+
+/** Narrow port over supabase.auth used by AuthProvider; replaced by a fake in tests. */
+export interface SessionSource {
+  onAuthStateChange(cb: (event: string, session: SessionLike) => void): { data: { subscription: { unsubscribe(): void } } };
+  getSession(): Promise<{ data: { session: SessionLike }; error?: unknown }>;
+  signOut(): Promise<{ error: unknown }>;
+}
+
+const SIGN_OUT_FAILED = "Couldn't sign out. You're still signed in — check your connection and try again.";
+
+export function AuthProvider({ children, source }: { children: ReactNode; source?: SessionSource }) {
   const queryClient = useQueryClient();
+  const auth: SessionSource = source ?? (supabase.auth as unknown as SessionSource);
   const [state, setState] = useState<{ status: AuthStatus; user: AuthUser | null }>({ status: "loading", user: null });
+  const [signOutPending, setSignOutPending] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
+  // Bumped by every auth event; bootstrap results tagged with an older value are dropped.
+  const generation = useRef(0);
+  const currentUid = useRef<string | null | undefined>(undefined); // undefined = not yet known
+  const signingOut = useRef(false);
+  const authRef = useRef(auth);
+  authRef.current = auth;
+
+  const apply = useCallback((user: AuthUser | null, status?: AuthStatus) => {
+    const prev = currentUid.current;
+    const next = user?.id ?? null;
+    // Clear cached data on any identity change (incl. user -> null and null -> user), outside setState.
+    if (prev !== undefined && prev !== next) queryClient.clear();
+    if (prev !== next) setSignOutError(null);
+    currentUid.current = next;
+    setState({ status: status ?? (user ? "signed_in" : "signed_out"), user });
+  }, [queryClient]);
 
   useEffect(() => {
     let active = true;
     let unsubscribe = () => {};
+    const a = authRef.current;
     try {
-      const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      const { data } = a.onAuthStateChange((event, session) => {
         if (!active) return;
-        const user = toUser(session?.user);
-        setState((prev) => {
-          if (event === "SIGNED_OUT" || (prev.user && user && prev.user.id !== user.id)) queryClient.clear();
-          return { status: user ? "signed_in" : "signed_out", user };
-        });
+        if (event === "TOKEN_REFRESHED" && toUser(session?.user)?.id === currentUid.current) return;
+        generation.current++;
+        apply(toUser(session?.user));
       });
       unsubscribe = () => data.subscription.unsubscribe();
-      supabase.auth.getSession().then(
+      const my = generation.current;
+      a.getSession().then(
         ({ data: d }) => {
-          if (!active) return;
-          const user = toUser(d.session?.user);
-          setState({ status: user ? "signed_in" : "signed_out", user });
+          if (!active || generation.current !== my) return;
+          apply(toUser(d.session?.user));
         },
-        () => active && setState({ status: "unavailable", user: null }),
+        () => {
+          if (!active || generation.current !== my) return;
+          apply(null, "unavailable");
+        },
       );
     } catch {
-      setState({ status: "unavailable", user: null });
+      apply(null, "unavailable");
     }
     return () => { active = false; unsubscribe(); };
-  }, [queryClient]);
+  }, [apply]);
 
-  const signOut = async () => {
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    try { await supabase.auth.signOut(); } catch { /* local session is cleared by the listener */ }
-    setState({ status: "signed_out", user: null });
-  };
+  const signOut = useCallback(async (): Promise<boolean> => {
+    if (signingOut.current) return false;
+    const uid = currentUid.current;
+    if (!uid) return false;
+    signingOut.current = true;
+    setSignOutPending(true);
+    setSignOutError(null);
+    let ok = false;
+    try {
+      const { error } = await authRef.current.signOut();
+      ok = !error;
+    } catch {
+      ok = false;
+    }
+    signingOut.current = false;
+    setSignOutPending(false);
+    // A newer sign-in for another account happened meanwhile: never overwrite it.
+    if (currentUid.current !== uid) return ok;
+    if (!ok) { setSignOutError(SIGN_OUT_FAILED); return false; }
+    // Provider confirmed local session removal (no error); reflect it even if the event is late.
+    generation.current++;
+    apply(null);
+    return true;
+  }, [apply]);
 
-  return <AuthContext.Provider value={{ ...state, signOut }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ ...state, signOut, signOutPending, signOutError }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthState {
