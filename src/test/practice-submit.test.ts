@@ -16,7 +16,7 @@ const baseCtx = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 const input = (response: SubmitInput["response"], over: Partial<SubmitInput> = {}): SubmitInput => ({
-  submissionId: SUB, questionId: QID, assignmentId: null, durationSec: 12, response, ...over,
+  submissionId: SUB, questionId: QID, expectedRevision: "f".repeat(32), assignmentId: null, durationSec: 12, response, ...over,
 });
 
 function fakeStore(ctx: unknown, recordOutcome: (a: RecordArgs) => unknown = (a) => ({

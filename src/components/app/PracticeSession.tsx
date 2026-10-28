@@ -170,6 +170,11 @@ function QuestionPanel({ userId, questionId, api, onSaved }: { userId: string; q
 
   return (
     <Panel title={`${q.year}${q.session ? ` ${q.session}` : ""} · Question ${q.number} · ${q.marks} mark${q.marks === 1 ? "" : "s"}`}>
+      {(q.topic || q.sourcePage || q.sourceFile) && (
+        <p className="mb-3 text-xs text-muted-foreground">
+          {[q.topic, q.sourceFile && `${q.sourceFile}${q.sourcePage ? ` · page ${q.sourcePage}` : ""}`].filter(Boolean).join(" · ")}
+        </p>
+      )}
       <MathMarkdown className="text-base leading-relaxed">{q.bodyMd}</MathMarkdown>
       {q.options.length > 0 && (
         <ol className="mt-4 space-y-2">
@@ -196,7 +201,12 @@ function QuestionPanel({ userId, questionId, api, onSaved }: { userId: string; q
           <>
             <PracticeAnswerInput key={round} type={q.type} options={q.options.map((o) => o.id)} disabled={pending || unresolved !== null} onSubmit={submitNew} />
             {pending && <p className="mt-3 text-sm text-muted-foreground" aria-live="polite">Saving…</p>}
-            {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
+            {error && <p role="alert" className="mt-3 text-sm text-destructive">{SUBMIT_MSG[error]}</p>}
+            {error === "stale" && !pending && (
+              <div className="mt-3">
+                <Button variant="outline" onClick={() => { void detail.refetch(); startOver(); }}>Reload question</Button>
+              </div>
+            )}
             {unresolved && !pending && (
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button onClick={() => void send(unresolved)}>Retry saving</Button>
