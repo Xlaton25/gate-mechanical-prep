@@ -20,6 +20,12 @@
 - [x] Combined schema migration applied to GATE (see docs/supabase.md)
 - [ ] Real login / email confirmation / persistence tested end-to-end (not done by automation)
 
+## Milestone 3 — Secure pilot practice
+- [x] gate-2026-v1 policy (code + DB), authenticated list/detail/submit, idempotent transactional saves (migration 20261028163911)
+- [x] /practice pilot screen (sign-in required, empty state until content exists)
+- [ ] Private import of the separately validated 10-question 2026 pilot (owner-supplied; not in git)
+- [ ] Signed-in end-to-end submission tested against real content
+
 ## Phase 1 — Data pipeline
 OCR for 9 image-only PDFs; review 2013 booklets, 2014–2016 sets, 2015 image bodies, 2017/2020 mixed content; deduplicate into Papers; extract Questions; validation workflow.
 
