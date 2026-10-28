@@ -12,10 +12,10 @@ export const Route = createFileRoute("/")({
 
 const CHECKLIST = [
   { label: "Source archive received (ME.zip, 26 PDFs)", done: true },
-  { label: "Owned backend connected", done: false },
+  { label: "Owned backend connected", done: true },
   { label: "OCR for image-only PDFs", done: false },
-  { label: "Questions extracted and validated", done: false },
-  { label: "Answer keys versioned with provenance", done: false },
+  { label: "Questions extracted and validated (10-question ME2026 pilot)", done: true },
+  { label: "Answer keys versioned with provenance (pilot only)", done: true },
   { label: "Daily practice enabled", done: false },
 ];
 
