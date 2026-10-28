@@ -26,6 +26,7 @@ export type Database = {
           question_id: string
           request_hash: string
           response: Json | null
+          solution_id: string | null
           status: string
           submission_id: string
           submitted_at: string
@@ -42,6 +43,7 @@ export type Database = {
           question_id: string
           request_hash: string
           response?: Json | null
+          solution_id?: string | null
           status: string
           submission_id: string
           submitted_at?: string
@@ -58,6 +60,7 @@ export type Database = {
           question_id?: string
           request_hash?: string
           response?: Json | null
+          solution_id?: string | null
           status?: string
           submission_id?: string
           submitted_at?: string
@@ -437,6 +440,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      practice_lookup_submission: {
+        Args: {
+          p_request_hash: string
+          p_submission_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       practice_record_attempt: {
         Args: {
           p_assignment_id: string
@@ -458,7 +469,6 @@ export type Database = {
         Args: { p_question_id: string }
         Returns: Json
       }
-      practice_solution: { Args: { p_question_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
