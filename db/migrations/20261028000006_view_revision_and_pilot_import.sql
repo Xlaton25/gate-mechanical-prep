@@ -95,6 +95,8 @@ declare
   v_topic    uuid;
   v_prev     uuid;
   v_exist    public.questions;
+  v_new_q    boolean;
+  v_new_key  boolean;
   v_nums     text := '|';
   v_created  integer := 0;
   n_q  integer := 0;
@@ -352,7 +354,8 @@ begin
     end loop;
 
     select * into v_exist from public.questions where paper_id = v_paper and number = v_num;
-    if not found then
+    v_new_q := not found;
+    if v_new_q then
       insert into public.questions (paper_id, number, type, marks, topic_id, body_md, validation_state, validated_at)
       values (v_paper, v_num, v_type, v_marks, v_prev, v_body, 'validated', v_valdate)
       returning id into v_qid;
@@ -372,7 +375,7 @@ begin
     end if;
 
     -- options: exact set, create-only
-    if (select count(*) from public.question_options where question_id = v_qid) <> v_optn then
+    if not v_new_q and (select count(*) from public.question_options where question_id = v_qid) <> v_optn then
       raise exception 'pilot_import: question % has a different option count', v_num using errcode = '55000';
     end if;
     for k in 1..v_optn loop
@@ -395,7 +398,8 @@ begin
                   else null end;
 
     select id into v_key from private.answer_keys where question_id = v_qid and version = 1;
-    if v_key is null then
+    v_new_key := v_key is null;
+    if v_new_key then
       insert into private.answer_keys
         (question_id, question_type, version, provenance, provenance_verified, mcq_option, msq_options)
       values
@@ -418,7 +422,7 @@ begin
 
     -- NAT bounds: exact numeric text, one row per ordinal
     if v_type = 'NAT' then
-      if (select count(*) from private.answer_key_nat_ranges where key_id = v_key)
+      if not v_new_key and (select count(*) from private.answer_key_nat_ranges where key_id = v_key)
            <> jsonb_array_length(v_k->'nat_ranges') then
         raise exception 'pilot_import: NAT ranges for question % differ in count', v_num using errcode = '55000';
       end if;
