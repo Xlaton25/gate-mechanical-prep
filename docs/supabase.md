@@ -9,6 +9,7 @@ Canonical, reviewable SQL stays in `db/migrations/`. It was applied to GATE **on
 |---|---|
 | `20261027160935` | `select 1` (no-op; created the generated types file) |
 | `20261028040618` | `db/migrations/20261027000001_core_schema.sql` + `000002_security.sql` + `000003_integrity_hardening.sql` |
+| `20261028163911` | `db/migrations/20261028000004_practice_submission.sql` (own migration, unchanged) |
 
 **Do not** run `db/migrations/*` against GATE again (e.g. via `supabase db push`) — the schema already exists and the statements are not idempotent. Use `supabase/migrations/` (Lovable-managed) as the remote history; new changes are new migrations.
 
@@ -35,6 +36,13 @@ Canonical, reviewable SQL stays in `db/migrations/`. It was applied to GATE **on
 - Key versions unique per question; attempts store `key_version_id` (same question) and `marking_policy_id` (must equal the paper's policy).
 - Marking policies are per exam year; only `gate-2027-v1` exists. Historical papers stay unscorable until their own policy is verified.
 - Daily assignments idempotent (`unique(user_id, study_day)`, items unique per position/question). **No scheduler yet.**
+
+## Milestone 3 — secure practice submission (000004)
+- Adds verified `gate-2026-v1` (MCQ −1/3, −2/3; MSQ/NAT no penalty/partial; source gate2026.iitg.ac.in, rechecked 2026-10-28). Year match still enforced.
+- `attempts` gains `submission_id` (unique per user), `request_hash` (same ID + altered payload → conflict), `context_fingerprint` (md5 of question/options/latest key/policy at scoring time).
+- RPCs `practice_scoring_context`, `practice_record_attempt`, `practice_solution` (+ `private.practice_context`): SECURITY INVOKER, `search_path=''`, EXECUTE revoked from PUBLIC/anon/authenticated, granted to service_role only. Latest key version only — a newer unverified key blocks scoring (no fallback). Record re-derives the context under a share lock and returns `stale` if anything changed.
+- Live read-only check after apply: all 4 functions invoker, empty search_path, anon/authenticated execute = false, service_role = true; policies 2026 + 2027 verified; 0 attempt rows.
+- Rehearsal: `db/tests/practice_submission.rehearsal.mjs` (26 checks, PGlite with simulated roles, synthetic ephemeral fixture) passed in the Lovable sandbox. Not covered: true concurrent inserts (PGlite is single-connection; the unique constraint + `on conflict do nothing` path is reasoned, not raced). Known limit: a key inserted concurrently with a save is not locked out by the question share lock; the fingerprint check catches any change committed before the save.
 
 ## App usage (milestone 2)
 - Email/password auth via the browser Supabase client; email provider settings are managed in the Supabase dashboard (Authentication → Providers / URL Configuration). Add the preview and future Netlify URLs (with `/auth`) to Redirect URLs for confirmation links.

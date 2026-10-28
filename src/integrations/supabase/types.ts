@@ -17,40 +17,49 @@ export type Database = {
       attempts: {
         Row: {
           assignment_id: string | null
+          context_fingerprint: string
           duration_sec: number | null
           id: string
           key_version_id: string
           marking_policy_id: string
           marks_thirds: number
           question_id: string
+          request_hash: string
           response: Json | null
           status: string
+          submission_id: string
           submitted_at: string
           user_id: string
         }
         Insert: {
           assignment_id?: string | null
+          context_fingerprint: string
           duration_sec?: number | null
           id?: string
           key_version_id: string
           marking_policy_id: string
           marks_thirds: number
           question_id: string
+          request_hash: string
           response?: Json | null
           status: string
+          submission_id: string
           submitted_at?: string
           user_id: string
         }
         Update: {
           assignment_id?: string | null
+          context_fingerprint?: string
           duration_sec?: number | null
           id?: string
           key_version_id?: string
           marking_policy_id?: string
           marks_thirds?: number
           question_id?: string
+          request_hash?: string
           response?: Json | null
           status?: string
+          submission_id?: string
           submitted_at?: string
           user_id?: string
         }
@@ -428,7 +437,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      practice_record_attempt: {
+        Args: {
+          p_assignment_id: string
+          p_context_fingerprint: string
+          p_duration_sec: number
+          p_key_version_id: string
+          p_marks_thirds: number
+          p_policy_id: string
+          p_question_id: string
+          p_request_hash: string
+          p_response: Json
+          p_status: string
+          p_submission_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      practice_scoring_context: {
+        Args: { p_question_id: string }
+        Returns: Json
+      }
+      practice_solution: { Args: { p_question_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
