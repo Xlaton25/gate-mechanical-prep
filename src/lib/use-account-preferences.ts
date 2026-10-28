@@ -45,7 +45,7 @@ export function useAccountPreferences(userId: string | null, store: PreferencesS
 
   const save = useCallback(async (input: LocalStudySettings) => {
     const s = owned.value;
-    if (!userId || owned.owner !== userId || s.status !== "ready" || s.saving) return;
+    if (!userId || uidRef.current !== userId || owned.owner !== userId || s.status !== "ready" || s.saving) return;
     const my = epoch.current;
     setOwned({ owner: userId, value: { ...s, saving: true, saveError: null, savedAt: null } });
     let r;
