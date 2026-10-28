@@ -13,7 +13,7 @@ describe("progress from saved attempts", () => {
     expect(s.accuracy).toBe(0.5);
     expect(s.unanswered).toBe(1);
     expect(s.netThirds).toBe(2);
-    expect(s.byTopic[0].limited).toBe(true);
+    expect(s.byTopic[0]?.limited).toBe(true);
   });
   it("streak uses the 04:00 Asia/Kolkata study day boundary", () => {
     // 22:00Z = 03:30 IST next day -> still the previous study day

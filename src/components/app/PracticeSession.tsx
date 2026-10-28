@@ -47,12 +47,12 @@ export function useDefaultPracticeApi(): PracticeApi {
 
 export interface PracticeScope {
   /** Restrict and order the list (daily set, revision queue, filtered PYQ sequence). */
-  filterIds?: string[];
+  filterIds?: string[] | undefined;
   /** Daily set the attempts belong to; only passed for questions in that set. */
   assignmentId?: string | null;
   initialId?: string | null;
   /** Per-question account actions (bookmark, mark for revision). */
-  extras?: (questionId: string) => ReactNode;
+  extras?: ((questionId: string) => ReactNode) | undefined;
 }
 
 export function PracticeSession({ api, ...scope }: { api: PracticeApi } & PracticeScope) {
