@@ -56,46 +56,29 @@ export const listPracticeQuestions = createServerFn({ method: "GET" })
     };
   });
 
-/** Public question DTO: body and options only. No key, no solution. */
+/**
+ * Public question DTO: body, options and revision from ONE snapshot (practice_question_view),
+ * so the wording shown and the revision submitted can never come from different edits.
+ * Eligibility (validated question, published paper) is enforced inside that view. No key, no solution.
+ */
 export const getPracticeQuestion = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => questionIdSchema.parse(d))
   .handler(async ({ data, context }): Promise<DetailResult> => {
     if (!accountMatches(data.expectedUserId, context.userId)) return { ok: false, error: "account_mismatch" };
-    const { data: q, error } = await context.supabase
-      .from("questions")
-      .select("id, number, type, marks, body_md, papers!inner(exam_year, session_label), question_options(option_id, body_md), syllabus_topics(name)")
-      .eq("id", data.questionId)
-      .eq("validation_state", "validated")
-      .maybeSingle();
-    if (error) {
-      console.error("[practice] detail failed:", error.code);
-      return { ok: false, error: classify(error.code) };
-    }
-    if (!q) return { ok: false, error: "not_found" };
-    const p = q.papers as unknown as PaperJoin;
-    // The viewed revision and display provenance come from trusted server-only reads.
-    // Neither returns a key, a numeric answer range, a solution or a bucket path.
     if (!process.env["SUPABASE_SERVICE_ROLE_KEY"]) return { ok: false, error: "setup_pending" };
-    const { fetchPracticeRevision, fetchPracticeSource } = await import("@/server/practice/store.server");
-    const [rev, src] = await Promise.all([
-      fetchPracticeRevision(q.id).catch(() => null),
-      fetchPracticeSource(q.id).catch(() => ({ page: null, file: null })),
-    ]);
-    // Without a revision the view cannot be bound to what will be scored: no answer form.
-    if (!rev) return { ok: false, error: "unavailable" };
-    return {
-      ok: true,
-      question: {
-        id: q.id, number: q.number, type: q.type as QuestionType, marks: q.marks,
-        year: p?.exam_year ?? 0, session: p?.session_label ?? "", bodyMd: q.body_md,
-        options: [...(q.question_options ?? [])].sort((a, b) => a.option_id.localeCompare(b.option_id)).map((o) => ({ id: o.option_id, bodyMd: o.body_md })),
-        revision: rev,
-        topic: (q as unknown as { syllabus_topics?: { name?: string } | null }).syllabus_topics?.name ?? null,
-        sourcePage: src.page,
-        sourceFile: src.file,
-      },
-    };
+    const { fetchPracticeView, fetchPracticeSource } = await import("@/server/practice/store.server");
+    let view;
+    try {
+      view = await fetchPracticeView(data.questionId);
+    } catch (e) {
+      console.error("[practice] detail failed:", (e as { code?: string }).code);
+      return { ok: false, error: classify((e as { code?: string }).code) };
+    }
+    if (!view) return { ok: false, error: "not_found" };
+    // Display provenance only (page + file name); never part of what is scored.
+    const src = await fetchPracticeSource(view.id).catch(() => ({ page: null, file: null }));
+    return { ok: true, question: { ...view, sourcePage: src.page, sourceFile: src.file } };
   });
 
 /** Scores on the server and saves before returning any solution. */
