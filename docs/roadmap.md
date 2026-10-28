@@ -17,7 +17,7 @@
 ## Milestone 2 — Accounts & synced preferences
 - [x] /auth email/password sign-in, sign-up, confirmation state, sign-out
 - [x] Settings: guest = local-only; signed-in = user_preferences (own uid, insert-if-absent, column-only update)
-- [ ] Combined schema migration applied to GATE (see docs/supabase.md)
+- [x] Combined schema migration applied to GATE (see docs/supabase.md)
 - [ ] Real login / email confirmation / persistence tested end-to-end (not done by automation)
 
 ## Phase 1 — Data pipeline
