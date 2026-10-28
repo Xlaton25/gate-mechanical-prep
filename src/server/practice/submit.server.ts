@@ -4,7 +4,7 @@
  * policy and user come from the server.
  */
 import { z } from "zod";
-import type { AttemptSummary, PracticeResponse, SubmitInput, SubmitResult } from "@/lib/practice-schema";
+import { accountMatches, type AttemptSummary, type BoundSubmit, type PracticeResponse, type SubmitInput, type SubmitResult } from "@/lib/practice-schema";
 import { MARKING_POLICIES, resolvePolicy } from "@/server/scoring/policies.server";
 import { scoreResponse, type AnswerKey, type ScoringQuestion } from "@/server/scoring/score.server";
 
@@ -24,9 +24,11 @@ export interface RecordArgs {
 }
 
 export interface PracticeStore {
+  /** Own prior submission by ID, independent of current content; null if unused. */
+  lookup(userId: string, submissionId: string, requestHash: string): Promise<unknown>;
   loadContext(questionId: string): Promise<unknown>;
+  /** Atomic save; returns the saved attempt plus its solution snapshot. */
   record(args: RecordArgs): Promise<unknown>;
-  loadSolution(questionId: string): Promise<string | null>;
 }
 
 const ctxSchema = z.object({
@@ -70,10 +72,15 @@ const attemptRow = z.object({
   marks_thirds: z.number().int(),
   submitted_at: z.string(),
 });
-const recordSchema = z.union([
-  z.object({ outcome: z.enum(["created", "replay"]), attempt: attemptRow }),
-  z.object({ outcome: z.enum(["conflict", "stale"]) }),
-]);
+const savedSchema = z.object({ outcome: z.enum(["created", "replay"]), attempt: attemptRow, solution_md: z.unknown().optional() });
+const recordSchema = z.union([savedSchema, z.object({ outcome: z.enum(["conflict", "stale"]) })]);
+const lookupSchema = z.union([z.null(), savedSchema.extend({ outcome: z.literal("replay") }), z.object({ outcome: z.literal("conflict") })]);
+
+// Snapshot text bound to the saved attempt's key version; anything unexpected -> no solution.
+const snapshot = (v: unknown): string | null => (typeof v === "string" && v.length > 0 ? v : null);
+const saved = (s: z.infer<typeof savedSchema>): SubmitResult => ({
+  ok: true, outcome: s.outcome, attempt: toSummary(s.attempt), solutionMd: snapshot(s.solution_md),
+});
 
 /** Canonical payload; MSQ order does not change meaning, so it does not change the hash. */
 export function canonicalPayload(input: SubmitInput): string {
@@ -123,6 +130,12 @@ const toSummary = (a: z.infer<typeof attemptRow>): AttemptSummary => ({
 /** userId must come from the verified session, never from the request body. */
 export async function submitAttempt(store: PracticeStore, userId: string, input: SubmitInput): Promise<SubmitResult> {
   try {
+    const hash = await requestHash(input);
+    // Replay first: a lost-response retry must not depend on content that may since have changed.
+    const prior = lookupSchema.safeParse(await store.lookup(userId, input.submissionId, hash));
+    if (!prior.success) return { ok: false, error: "server_error" };
+    if (prior.data) return prior.data.outcome === "conflict" ? { ok: false, error: "conflict" } : saved(prior.data);
+
     const parsedCtx = ctxSchema.safeParse(await store.loadContext(input.questionId));
     if (!parsedCtx.success || parsedCtx.data.question_id !== input.questionId) return { ok: false, error: "not_available" };
     const ctx = parsedCtx.data;
@@ -138,29 +151,38 @@ export async function submitAttempt(store: PracticeStore, userId: string, input:
     }
     if (scored.status === "invalid") return { ok: false, error: "invalid_response" }; // never persisted
 
-    const raw = await store.record({
-      userId,
-      submissionId: input.submissionId,
-      requestHash: await requestHash(input),
-      questionId: input.questionId,
-      assignmentId: input.assignmentId,
-      response: input.response.kind === "blank" ? null : input.response,
-      status: scored.status,
-      marksThirds: scored.marksThirds,
-      keyVersionId: scored.keyVersionId,
-      policyId: scored.policyId,
-      contextFingerprint: ctx.fingerprint,
-      durationSec: input.durationSec,
-    });
-    const rec = recordSchema.safeParse(raw);
+    const rec = recordSchema.safeParse(
+      await store.record({
+        userId,
+        submissionId: input.submissionId,
+        requestHash: hash,
+        questionId: input.questionId,
+        assignmentId: input.assignmentId,
+        response: input.response.kind === "blank" ? null : input.response,
+        status: scored.status,
+        marksThirds: scored.marksThirds,
+        keyVersionId: scored.keyVersionId,
+        policyId: scored.policyId,
+        contextFingerprint: ctx.fingerprint,
+        durationSec: input.durationSec,
+      }),
+    );
+    // Unparseable reply: outcome unknown, so the client keeps the same submission for a safe retry.
     if (!rec.success) return { ok: false, error: "server_error" };
-    const saved = rec.data;
-    if (!("attempt" in saved)) return { ok: false, error: saved.outcome };
-    // Solution only after the attempt is durably saved.
-    const solutionMd = await store.loadSolution(input.questionId);
-    return { ok: true, outcome: saved.outcome, attempt: toSummary(saved.attempt), solutionMd };
+    if (!("attempt" in rec.data)) return { ok: false, error: rec.data.outcome };
+    return saved(rec.data); // solution comes from the same transaction as the save
   } catch (e) {
     console.error("[practice] submit failed:", e instanceof Error ? e.name : "unknown");
     return { ok: false, error: "server_error" };
   }
+}
+
+/**
+ * Account binding: the browser states which account it intends to act as; the verified
+ * token decides who it is. Any mismatch (e.g. account switched while the token was being
+ * attached) is rejected before anything is read or written.
+ */
+export async function submitBound(store: PracticeStore, verifiedUserId: string, bound: BoundSubmit): Promise<SubmitResult> {
+  if (!accountMatches(bound.expectedUserId, verifiedUserId)) return { ok: false, error: "account_mismatch" };
+  return submitAttempt(store, verifiedUserId, bound.submission);
 }

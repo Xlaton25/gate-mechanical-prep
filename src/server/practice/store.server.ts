@@ -12,6 +12,15 @@ class StoreError extends Error {
 
 export function createAdminPracticeStore(): PracticeStore {
   return {
+    async lookup(userId, submissionId, requestHash) {
+      const { data, error } = await supabaseAdmin.rpc("practice_lookup_submission", {
+        p_user_id: userId,
+        p_submission_id: submissionId,
+        p_request_hash: requestHash,
+      });
+      if (error) throw new StoreError(error.code ?? "rpc");
+      return data;
+    },
     async loadContext(questionId) {
       const { data, error } = await supabaseAdmin.rpc("practice_scoring_context", { p_question_id: questionId });
       if (error) throw new StoreError(error.code ?? "rpc");
@@ -34,11 +43,6 @@ export function createAdminPracticeStore(): PracticeStore {
       });
       if (error) throw new StoreError(error.code ?? "rpc");
       return data;
-    },
-    async loadSolution(questionId) {
-      const { data, error } = await supabaseAdmin.rpc("practice_solution", { p_question_id: questionId });
-      if (error) throw new StoreError(error.code ?? "rpc");
-      return typeof data === "string" ? data : null;
     },
   };
 }

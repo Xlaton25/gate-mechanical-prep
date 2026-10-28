@@ -26,7 +26,15 @@ export const submitInputSchema = z
   .strict();
 export type SubmitInput = z.infer<typeof submitInputSchema>;
 
-export const questionIdSchema = z.object({ questionId: z.string().uuid() }).strict();
+/** Every practice call names the account it was issued for; the server compares it to the verified token. */
+const expectedUserId = z.string().uuid();
+export const boundSubmitSchema = z.object({ expectedUserId, submission: submitInputSchema }).strict();
+export type BoundSubmit = z.infer<typeof boundSubmitSchema>;
+export const boundListSchema = z.object({ expectedUserId }).strict();
+export const questionIdSchema = z.object({ expectedUserId, questionId: z.string().uuid() }).strict();
+
+/** Untrusted expectation vs verified identity. Never used to derive the user. */
+export const accountMatches = (expected: string, verified: string) => expected.length > 0 && expected === verified;
 
 export type QuestionType = "MCQ" | "MSQ" | "NAT";
 
@@ -52,11 +60,11 @@ export interface AttemptSummary {
   submittedAt: string;
 }
 
-export type PracticeError = "setup_pending" | "unavailable";
+export type PracticeError = "setup_pending" | "unavailable" | "account_mismatch";
 export type ListResult = { ok: true; questions: PracticeQuestionSummary[]; attempts: AttemptSummary[] } | { ok: false; error: PracticeError };
 export type DetailResult = { ok: true; question: PracticeQuestionDetail } | { ok: false; error: PracticeError | "not_found" };
 
-export type SubmitError = "not_available" | "invalid_response" | "conflict" | "stale" | "server_error";
+export type SubmitError = "not_available" | "invalid_response" | "conflict" | "stale" | "server_error" | "account_mismatch";
 export type SubmitResult =
   | { ok: true; outcome: "created" | "replay"; attempt: AttemptSummary; solutionMd: string | null }
   | { ok: false; error: SubmitError };
