@@ -14,3 +14,6 @@
 - [ ] Practice page: load real 10, safe Markdown/KaTeX/table render, topic + source year/session/question/page, partial-pilot label
 - [ ] Replace blanket "no questions exist" copy on dashboard /pyq /admin DataNotice with DB-derived facts
 - [ ] Live read-only verification of import + privilege boundaries; SQL/typecheck/build checks
+- [x] Learning MVP: daily 10 + dashboard, spaced revision/mistakes/bookmarks, PYQ explorer, analytics + export, timed mini-tests, topic hub/corpus counts, install manifest (migration 000009 = 20261028225758)
+- [ ] Offline app shell (service worker) — not added; manifest/home-screen icons only
+- [ ] Full-length mocks — blocked until far more validated questions exist

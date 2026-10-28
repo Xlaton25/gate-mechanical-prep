@@ -31,3 +31,5 @@
 - Practice saves: replay lookup before content checks; SHARE-lock all scoring-content tables inside the record RPC; solutions are immutable and snapshotted per attempt — keeps retries and shown solutions consistent with the saved score.
 - Client retries resend the exact frozen SubmitInput (incl. duration) until a definite outcome — the request hash covers every field.
 - Question/option/solution text renders only through MathMarkdown (no raw HTML, untrusted KaTeX).
+- Daily sets, revision scheduling and mini-tests are written only by service-role invoker RPCs/tables in `src/server/learning/*.server.ts`; learners read own rows via RLS — keeps selection and spaced-repetition state unforgeable.
+- Mini-test finalization resends each item's stored submission_id + bound revision through `submitAttempt` — retries replay, never duplicate attempts or revision steps.
