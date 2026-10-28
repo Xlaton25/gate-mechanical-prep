@@ -61,3 +61,29 @@ Canonical, reviewable SQL stays in `db/migrations/`. It was applied to GATE **on
 ## App usage (milestone 2)
 - Email/password auth via the browser Supabase client; email provider settings are managed in the Supabase dashboard (Authentication → Providers / URL Configuration). Add the preview and future Netlify URLs (with `/auth`) to Redirect URLs for confirmation links.
 - Settings reads/writes `user_preferences` for the current uid only: insert when absent, column-only update when present.
+
+## Status after the ME2026 pilot import (2026-10-28)
+
+Applied migration mapping (canonical `db/migrations` -> applied in owned GATE `utlagjareqqrtztmlmgz`):
+- 000001-000003 -> `20261028040618` (one combined batch)
+- 000004 -> `20261028163911`
+- 000005 -> `20261028165705`
+- 000006 -> `20261028173202` (content-bound view revision + service-only create-only pilot import)
+- 000007 -> `20261028173740` (display provenance: page + paper file name only)
+
+Imported: 1 paper (ME2026, session 6) with verified policy `gate-2026-v1`, 10 validated questions
+(numbers 1, 2, 4, 5, 6, 7, 11, 16, 18, 61; 9 MCQ + 1 NAT, 13 marks), their options, official version-1
+answer keys and one NAT range, 10 reviewed authored solutions bound to those keys, provenance/source
+manifest, one import-job audit row and 22 syllabus topic links. This is PARTIAL pilot coverage only:
+the 44-page PDF and the 65-question paper are not fully processed.
+
+Verified: local PostgreSQL rehearsal 83/83 (create-only import, exact rerun no-op, conflict abort,
+content-bound revision, stale-save, replay-after-change, privileges); pgTAP security suite 43/43 against
+000001-000006; concurrency rehearsal 26/26; live read-only checks (10 questions validated, attempts = 0,
+no learner or fake user rows, new functions executable by service_role only); offline scoring of the real
+imported contexts with no writes.
+
+Unverified / remaining: a real signed-in submission through the app UI; exact repeat-run no-op of the live
+import call; daily-10 scheduling; content editing/admin edits (view-revision checks exist for the learner
+path only); Netlify deployment of the current build; Supabase leaked-password protection is disabled
+(pre-existing warning).
