@@ -60,7 +60,7 @@ q -c "update private.answer_keys set provenance_verified=true where id='$K1';
       update public.questions set validation_state='validated', validated_at=now() where id='$Q';" >/dev/null
 FP=$(q -c "set role service_role; select public.practice_scoring_context('$Q')->>'fingerprint'")
 E=$(q -c "update private.solutions set body_md='edited' where id='$SOL1'" 2>&1 || true)
-ok "solutions are immutable" "$(echo "$E" | grep -c immutable)" 1
+ok "solutions are immutable" "$(echo "$E" | grep -c 'ERROR:.*immutable')" 1
 E=$(q -c "set role service_role; select public.practice_solution('$Q')" 2>&1 || true)
 ok "newest-arbitrary practice_solution RPC removed" "$(echo "$E" | grep -c 'does not exist')" 1
 
