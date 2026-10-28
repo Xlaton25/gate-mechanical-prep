@@ -9,8 +9,13 @@ export const Route = createFileRoute("/pyq")({
     <>
       <PageHeader title="PYQ Explorer" description="Filter previous-year questions by year, subject and concept." />
       <DataNotice />
-      <EmptyState icon={Search} title="No questions imported" action={<Button variant="outline" asChild><Link to="/admin">See source files</Link></Button>}>
-        26 source PDFs are received, but no questions have been extracted or validated.
+      <EmptyState
+        icon={Search}
+        title="Full archive search is still pending"
+        action={<Button variant="outline" asChild><Link to="/practice">Open pilot practice</Link></Button>}
+      >
+        A ten-question ME2026 pilot is validated and ready now. Year, subject and concept filters over the rest of the
+        26-paper archive have not been built yet.
       </EmptyState>
     </>
   ),

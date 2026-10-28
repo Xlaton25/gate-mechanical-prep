@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # auth.users/auth.uid() stubs mirror Supabase (uid read from request.jwt.claims).
 # Runs security_integrity.test.sql with real pgTAP on a throwaway local PostgreSQL cluster
-# after canonical migrations 000001–000005. Synthetic data only; never touches a remote.
+# after canonical migrations 000001–000006. Synthetic data only; never touches a remote.
 # Needs PGTAP_SQL=/path/to/pgtap.sql (built from github.com/theory/pgtap via `make sql/pgtap.sql`)
 # when the pgtap extension is not installed; it is then loaded into schema `extensions`.
 set -euo pipefail
@@ -16,7 +16,7 @@ create schema extensions; create schema auth; create table auth.users (id uuid p
 create function auth.uid() returns uuid language sql stable as \$\$ select coalesce(nullif(current_setting('request.jwt.claim.sub', true), ''), (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub'))::uuid \$\$;
 grant usage on schema public, extensions, auth to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated, service_role;" >/dev/null
-for f in 20261027000001_core_schema 20261027000002_security 20261027000003_integrity_hardening 20261028000004_practice_submission 20261028000005_practice_hardening; do q -f "$M/$f.sql" >/dev/null; done
+for f in 20261027000001_core_schema 20261027000002_security 20261027000003_integrity_hardening 20261028000004_practice_submission 20261028000005_practice_hardening 20261028000006_view_revision_and_pilot_import; do q -f "$M/$f.sql" >/dev/null; done
 if [ -n "${PGTAP_SQL:-}" ]; then
   PGOPTIONS="-c search_path=extensions" q -f "$PGTAP_SQL" >/dev/null 2>&1
   grant="grant usage on schema extensions to public; grant execute on all functions in schema extensions to public;"

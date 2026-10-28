@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { CalendarClock, Lock, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DataNotice, PageHeader, Panel, meta } from "@/components/app/ui";
-import { INTAKE_SUMMARY, SOURCE_FILES, totalPages } from "@/data/source-inventory";
+import { SOURCE_FILES, totalPages } from "@/data/source-inventory";
 import { useLocalSettings } from "@/lib/local-settings";
 
 export const Route = createFileRoute("/")({
@@ -12,10 +12,10 @@ export const Route = createFileRoute("/")({
 
 const CHECKLIST = [
   { label: "Source archive received (ME.zip, 26 PDFs)", done: true },
-  { label: "Owned backend connected", done: false },
+  { label: "Owned backend connected", done: true },
   { label: "OCR for image-only PDFs", done: false },
-  { label: "Questions extracted and validated", done: false },
-  { label: "Answer keys versioned with provenance", done: false },
+  { label: "Questions extracted and validated (10-question ME2026 pilot)", done: true },
+  { label: "Answer keys versioned with provenance (pilot only)", done: true },
   { label: "Daily practice enabled", done: false },
 ];
 
@@ -36,9 +36,10 @@ function Dashboard() {
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <Button disabled aria-describedby="practice-why"><Lock aria-hidden /> Start practice</Button>
+            <Button variant="outline" asChild><Link to="/practice">Pilot practice</Link></Button>
             <Button variant="outline" asChild><Link to="/admin">View sources</Link></Button>
           </div>
-          <p id="practice-why" className="mt-3 text-sm text-muted-foreground">Disabled: 0 of 0 questions verified.</p>
+          <p id="practice-why" className="mt-3 text-sm text-muted-foreground">Disabled: daily scheduling isn't built yet — the ten-question pilot is open now.</p>
         </section>
 
         <Panel title="Due revisions">
@@ -75,7 +76,7 @@ function Dashboard() {
             <Stat label="Source PDFs" value={SOURCE_FILES.length} />
             <Stat label="PDF pages" value={totalPages()} />
             <Stat label="Filename years" value="2007–2026" />
-            <Stat label="Verified questions" value={INTAKE_SUMMARY.verifiedQuestions} />
+            <Stat label="Validated pilot" value="10 Q · ME2026" />
           </dl>
           <p className="mt-4 text-xs text-muted-foreground">File counts are not session or question coverage. Concept coverage appears once questions are validated.</p>
         </Panel>

@@ -6,7 +6,7 @@ import { accountMatches, boundSubmitSchema, questionIdSchema, boundListSchema, t
 const QID = "00000000-0000-4000-8000-00000000b001";
 const U1 = "00000000-0000-4000-8000-0000000000a1";
 const U2 = "00000000-0000-4000-8000-0000000000a2";
-const input: SubmitInput = { submissionId: "00000000-0000-4000-8000-00000000e001", questionId: QID, assignmentId: null, durationSec: 5, response: { kind: "MCQ", option: "B" } };
+const input: SubmitInput = { submissionId: "00000000-0000-4000-8000-00000000e001", questionId: QID, expectedRevision: "f".repeat(32), assignmentId: null, durationSec: 5, response: { kind: "MCQ", option: "B" } };
 const attempt = { id: "orig", question_id: QID, status: "correct", marks_thirds: 3, submitted_at: "2026-10-28T09:00:00Z" };
 const ctx = {
   question_id: QID, type: "MCQ", marks: 1, paper_year: 2026, option_ids: ["A", "B", "C", "D"], fingerprint: "f".repeat(32),

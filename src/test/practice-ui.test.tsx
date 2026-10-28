@@ -19,7 +19,7 @@ const wrap = (a: AuthState, api: PracticeApi) =>
       <StaticAuthProvider value={a}><PracticeSession api={api} /></StaticAuthProvider>
     </QueryClientProvider>,
   );
-const Q = { id: "00000000-0000-4000-8000-00000000b001", number: 1, type: "MCQ" as const, marks: 1, year: 2026, session: "" };
+const Q = { id: "00000000-0000-4000-8000-00000000b001", number: 1, type: "MCQ" as const, marks: 1, year: 2026, session: "", revision: "f".repeat(32), topic: "Synthetic topic", sourcePage: 3, sourceFile: "SYNTHETIC.pdf" };
 const api = (submit: (i: SubmitInput, expected: string) => Promise<SubmitResult>): PracticeApi => ({
   list: async () => ({ ok: true, questions: [Q], attempts: [] }),
   detail: async () => ({ ok: true, question: { ...Q, bodyMd: "Synthetic body", options: ["A", "B", "C", "D"].map((id) => ({ id, bodyMd: `opt ${id}` })) } }),

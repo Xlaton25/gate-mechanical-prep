@@ -21,4 +21,10 @@ describe("canonical vs applied migration parity", () => {
   it("000005 = 20261028165705", () => {
     expect(applied("20261028165705")).toBe(canon("20261028000005_practice_hardening"));
   });
+  it("000006 = 20261028173202", () => {
+    expect(applied("20261028173202")).toBe(canon("20261028000006_view_revision_and_pilot_import"));
+  });
+  it("000007 = 20261028173740", () => {
+    expect(applied("20261028173740")).toBe(canon("20261028000007_practice_source"));
+  });
 });

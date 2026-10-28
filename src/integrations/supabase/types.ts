@@ -440,6 +440,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      pilot_import: { Args: { p_payload: Json }; Returns: Json }
       practice_lookup_submission: {
         Args: {
           p_request_hash: string
@@ -447,6 +448,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      practice_question_revision: {
+        Args: { p_question_id: string }
+        Returns: string
       }
       practice_record_attempt: {
         Args: {
@@ -469,6 +474,7 @@ export type Database = {
         Args: { p_question_id: string }
         Returns: Json
       }
+      practice_source: { Args: { p_question_id: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never

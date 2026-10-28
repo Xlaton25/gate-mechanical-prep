@@ -23,3 +23,9 @@ Repo: https://github.com/Xlaton25/gate-mechanical-prep (`main`, public by owner'
 
 ## Docs
 `docs/roadmap.md`, `docs/architecture.md`, `docs/supabase.md`, `docs/intake.md`, `docs/integration-checklist.md`.
+
+## Pilot practice (current)
+
+`/practice` serves the ten validated ME2026 pilot questions. Each question shows its topic and the page
+of the paper it came from, and every answer is scored server-side against the reviewed key and the verified
+`gate-2026-v1` policy. Daily-10 scheduling is still pending; the wider archive is not yet extracted.

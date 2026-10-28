@@ -6,6 +6,8 @@
 import { z } from "zod";
 
 const optionId = z.string().regex(/^[A-H]$/);
+/** Opaque fingerprint of exactly what the learner was shown; server-computed, never a key. */
+const revision = z.string().regex(/^[0-9a-f]{32}$/);
 
 export const responseSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("MCQ"), option: optionId }).strict(),
@@ -19,6 +21,9 @@ export const submitInputSchema = z
   .object({
     submissionId: z.string().uuid(),
     questionId: z.string().uuid(),
+    // The revision the learner actually viewed. The server compares it with the current
+    // content before scoring, so wording/option/key/policy edits cannot grade an old view.
+    expectedRevision: revision,
     assignmentId: z.string().uuid().nullable(),
     durationSec: z.number().int().min(0).max(86400).nullable(),
     response: responseSchema,
@@ -50,6 +55,12 @@ export interface PracticeQuestionSummary {
 export interface PracticeQuestionDetail extends PracticeQuestionSummary {
   bodyMd: string;
   options: { id: string; bodyMd: string }[];
+  /** Opaque revision of the wording/options/key/policy shown; must come back on submit. */
+  revision: string;
+  /** Display provenance only: topic label and which page of which paper file. */
+  topic: string | null;
+  sourcePage: number | null;
+  sourceFile: string | null;
 }
 
 export interface AttemptSummary {

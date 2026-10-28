@@ -46,3 +46,18 @@ export function createAdminPracticeStore(): PracticeStore {
     },
   };
 }
+
+/** Opaque revision of what the learner is about to be shown (service-role only, hash only). */
+export async function fetchPracticeRevision(questionId: string): Promise<string | null> {
+  const { data, error } = await supabaseAdmin.rpc("practice_question_revision", { p_question_id: questionId });
+  if (error) throw new StoreError(error.code ?? "rpc");
+  return typeof data === "string" && /^[0-9a-f]{32}$/.test(data) ? data : null;
+}
+
+/** Which page of which paper file a question came from. Never a bucket path. */
+export async function fetchPracticeSource(questionId: string): Promise<{ page: number | null; file: string | null }> {
+  const { data, error } = await supabaseAdmin.rpc("practice_source", { p_question_id: questionId });
+  if (error) throw new StoreError(error.code ?? "rpc");
+  const s = data as { source_page?: number | null; file_name?: string | null } | null;
+  return { page: typeof s?.source_page === "number" ? s.source_page : null, file: typeof s?.file_name === "string" ? s.file_name : null };
+}
