@@ -19,8 +19,8 @@ describe("public Supabase browser config", () => {
   });
 
   it("defines the browser URL and publishable key for the GATE project", () => {
-    expect(vars.VITE_SUPABASE_URL).toBe("https://utlagjareqqrtztmlmgz.supabase.co");
-    expect(vars.VITE_SUPABASE_PUBLISHABLE_KEY?.startsWith("sb_publishable_")).toBe(true);
+    expect(vars["VITE_SUPABASE_URL"]).toBe("https://utlagjareqqrtztmlmgz.supabase.co");
+    expect(vars["VITE_SUPABASE_PUBLISHABLE_KEY"]?.startsWith("sb_publishable_")).toBe(true);
   });
 
   it("contains no secret keys", () => {
