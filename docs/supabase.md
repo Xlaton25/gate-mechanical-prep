@@ -71,6 +71,7 @@ Applied migration mapping (canonical `db/migrations` -> applied in owned GATE `u
 - 000006 -> `20261028173202` (content-bound view revision + service-only create-only pilot import)
 - 000007 -> `20261028173740` (display provenance: page + paper file name only)
 - 000008 -> `20261028224036` (single-snapshot `practice_question_view`: question DTO + revision from one statement, allowlisted fields, service-role only; importer compares whole existing option sets before any write and rejects missing required fields). Detail reads no longer pair a separate RLS read with a second revision call.
+- 000009 -> `20261028225758` (learning MVP: `ensure_daily_assignment` one set per user/study day with recorded reasons; `practice_eligible_questions`; spaced revision 1/3/7/14/30 via an AFTER INSERT trigger on attempts so replays never advance twice; `mark_for_revision`; own-user `bookmarks`, `daily_checklist`; server-written `mini_tests`/`mini_test_items`; pg_cron job `gate-daily-sets` daily 22:35 UTC (04:05 IST) calling `private.generate_due_daily()` for users with saved preferences, with on-request catch-up). Rehearsal: `db/tests/learning_mvp.pg.sh` (27 synthetic checks).
 
 Imported: 1 paper (ME2026, session 6) with verified policy `gate-2026-v1`, 10 validated questions
 (numbers 1, 2, 4, 5, 6, 7, 11, 16, 18, 61; 9 MCQ + 1 NAT, 13 marks), their options, official version-1

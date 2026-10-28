@@ -47,12 +47,12 @@ export function useDefaultPracticeApi(): PracticeApi {
 
 export interface PracticeScope {
   /** Restrict and order the list (daily set, revision queue, filtered PYQ sequence). */
-  filterIds?: string[];
+  filterIds?: string[] | undefined;
   /** Daily set the attempts belong to; only passed for questions in that set. */
   assignmentId?: string | null;
   initialId?: string | null;
   /** Per-question account actions (bookmark, mark for revision). */
-  extras?: (questionId: string) => ReactNode;
+  extras?: ((questionId: string) => ReactNode) | undefined;
 }
 
 export function PracticeSession({ api, ...scope }: { api: PracticeApi } & PracticeScope) {
@@ -80,10 +80,10 @@ function SignedInPractice({ userId, api, filterIds, assignmentId = null, initial
         Questions couldn't be loaded. Nothing is shown rather than guessing.
       </EmptyState>
     );
-  const { attempts } = list.data;
+  const { attempts, questions: all } = list.data;
   const questions = filterIds
-    ? filterIds.flatMap((id) => list.data.questions.filter((q) => q.id === id))
-    : list.data.questions;
+    ? filterIds.flatMap((id) => all.filter((q) => q.id === id))
+    : all;
   if (questions.length === 0)
     return (
       <EmptyState icon={BookOpenCheck} title="No validated questions yet">
@@ -124,7 +124,7 @@ function SignedInPractice({ userId, api, filterIds, assignmentId = null, initial
 
 function QuestionPanel({ userId, questionId, api, onSaved, assignmentId = null, extras, onNext }: {
   userId: string; questionId: string; api: PracticeApi; onSaved: () => void;
-  assignmentId?: string | null; extras?: ReactNode; onNext?: () => void;
+  assignmentId?: string | null; extras?: ReactNode; onNext?: (() => void) | undefined;
 }) {
   const detail = useQuery({ queryKey: ["practice", userId, "q", questionId], queryFn: () => api.detail(userId, questionId) });
   const [pending, setPending] = useState(false);

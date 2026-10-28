@@ -30,7 +30,7 @@ export { fetchPracticeView };
 
 export async function createMiniTest(userId: string, questionIds: string[], topicId: string | null, minutes: number): Promise<string | null> {
   const views = await Promise.all(questionIds.map((id) => fetchPracticeView(id)));
-  const items = views.flatMap((v, i) => (v ? [{ questionId: questionIds[i], revision: v.revision }] : []));
+  const items = views.flatMap((v, i) => (v ? [{ questionId: questionIds[i]!, revision: v.revision }] : []));
   if (items.length === 0) return null;
   const now = Date.now();
   const { data: t, error } = await supabaseAdmin

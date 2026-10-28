@@ -39,7 +39,7 @@ function Today({ userId }: { userId: string }) {
   const s = t.summary;
   const done = t.items.filter((i) => i.done).length;
   const ids = t.items.map((i) => i.id);
-  const next = t.items.find((i) => !i.done) ?? t.items[0];
+  const next = t.items.find((i) => !i.done) ?? t.items[0]!;
   const toggle = async (task: number, v: boolean) => {
     await checkFn({ data: { expectedUserId: userId, studyDay: t.studyDay, task, done: v } }).catch(() => null);
     void qc.invalidateQueries({ queryKey: key });
@@ -110,7 +110,7 @@ function Today({ userId }: { userId: string }) {
           {TASKS.map((label, i) => (
             <li key={label}>
               <label className="flex min-h-11 items-center gap-3 text-sm">
-                <Checkbox checked={t.checklist[i]} onCheckedChange={(v) => void toggle(i + 1, v === true)} />
+                <Checkbox checked={t.checklist[i] ?? false} onCheckedChange={(v) => void toggle(i + 1, v === true)} />
                 {label}
               </label>
             </li>

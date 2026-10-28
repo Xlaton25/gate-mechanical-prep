@@ -5,13 +5,13 @@ import { QuestionActions } from "@/components/app/learning";
 import { useAuth } from "@/lib/auth";
 
 const UUID = /^[0-9a-f-]{36}$/i;
-type Search = { ids?: string; q?: string; set?: string };
+type Search = { ids?: string | undefined; q?: string | undefined; set?: string | undefined };
 
 export const Route = createFileRoute("/practice")({
   validateSearch: (s: Record<string, unknown>): Search => ({
-    ids: typeof s.ids === "string" ? s.ids : undefined,
-    q: typeof s.q === "string" && UUID.test(s.q) ? s.q : undefined,
-    set: typeof s.set === "string" && UUID.test(s.set) ? s.set : undefined,
+    ids: typeof s["ids"] === "string" ? s["ids"] : undefined,
+    q: typeof s["q"] === "string" && UUID.test(s["q"]) ? s["q"] : undefined,
+    set: typeof s["set"] === "string" && UUID.test(s["set"]) ? s["set"] : undefined,
   }),
   head: () => meta("Practice", "Practice validated GATE ME questions, checked and saved on the server."),
   component: Practice,

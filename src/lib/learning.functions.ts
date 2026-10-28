@@ -308,7 +308,7 @@ export const startMiniTest = createServerFn({ method: "POST" })
       const under = (id: string | null) => { for (let c = id ? topics.get(id) : undefined, i = 0; c && i < 20; c = c.parentId ? topics.get(c.parentId) : undefined, i++) if (c.id === data.topicId) return true; return false; };
       const pool = (await eligiblePool()).filter((p) => !data.topicId || under(p.topic_id));
       // Shuffle on the server; the browser never chooses which questions or revisions are bound.
-      const ids = pool.map((p) => p.question_id).map((id) => ({ id, r: crypto.getRandomValues(new Uint32Array(1))[0] })).sort((a, b) => a.r - b.r).slice(0, data.count).map((x) => x.id);
+      const ids = pool.map((p) => p.question_id).map((id) => ({ id, r: crypto.getRandomValues(new Uint32Array(1))[0] })).sort((a, b) => (a.r ?? 0) - (b.r ?? 0)).slice(0, data.count).map((x) => x.id);
       const id = await createMiniTest(context.userId, ids, data.topicId, data.minutes);
       return { ok: true, test: await testView(context.userId, id) };
     } catch (e) { log("start", e); return UNAVAILABLE; }
