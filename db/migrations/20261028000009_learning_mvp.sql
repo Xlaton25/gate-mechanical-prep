@@ -153,18 +153,14 @@ begin
     return v_id;
   end if;
 
-  create temp table if not exists _elig (question_id uuid, topic_id uuid) on commit drop;
-  truncate _elig;
-  insert into _elig select * from public.practice_eligible_questions();
-
   -- 1. due revision (2)
-  for rec in select e.question_id from _elig e
+  for rec in select e.question_id from public.practice_eligible_questions() e
                join public.revision_items ri on ri.question_id = e.question_id and ri.user_id = p_user_id and ri.kind = 'question'
               where ri.due_at <= now() order by ri.due_at, e.question_id limit 2 loop
     v_ids := v_ids || rec.question_id; v_reasons := v_reasons || 'due_revision'::text;
   end loop;
   -- 2. weak topics (2): topics with < 60% accuracy on answered attempts
-  for rec in select e.question_id from _elig e
+  for rec in select e.question_id from public.practice_eligible_questions() e
                join (select q.topic_id, avg(case when a.status = 'correct' then 1.0 else 0 end) acc
                        from public.attempts a join public.questions q on q.id = a.question_id
                       where a.user_id = p_user_id and a.status in ('correct', 'wrong') and q.topic_id is not null
@@ -178,14 +174,14 @@ begin
                select e.question_id, e.topic_id,
                       row_number() over (partition by e.topic_id order by md5(p_user_id::text || v_day::text || e.question_id::text)) rn,
                       md5(p_user_id::text || v_day::text || e.question_id::text) h
-                 from _elig e
+                 from public.practice_eligible_questions() e
                 where not exists (select 1 from public.attempts a where a.user_id = p_user_id and a.question_id = e.question_id)
                   and not (e.question_id = any(v_ids))) x
               order by x.rn, x.h limit greatest(0, 10 - cardinality(v_ids)) loop
     v_ids := v_ids || rec.question_id; v_reasons := v_reasons || 'unseen'::text;
   end loop;
   -- 4. least recently attempted fills the rest
-  for rec in select e.question_id from _elig e
+  for rec in select e.question_id from public.practice_eligible_questions() e
                join (select a.question_id, max(a.submitted_at) last_at from public.attempts a
                       where a.user_id = p_user_id group by a.question_id) s on s.question_id = e.question_id
               where not (e.question_id = any(v_ids))
