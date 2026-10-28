@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Real PostgreSQL rehearsal of db/migrations 000006 (view revision + create-only pilot import).
+# Real PostgreSQL rehearsal of db/migrations 000006–000008 (view revision, single-snapshot view,
+# create-only pilot import).
 # Starts a throwaway local cluster in /tmp, simulates Supabase roles, and uses ONLY synthetic
 # rows — no real questions, keys or solutions appear here or in the payload. Never touches a remote.
 # Usage: bash db/tests/pilot_import.pg.sh
@@ -26,7 +27,8 @@ create function auth.uid() returns uuid language sql stable as \$\$ select nulli
 grant usage on schema public, extensions, auth to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated, service_role;" >/dev/null
 for f in 20261027000001_core_schema 20261027000002_security 20261027000003_integrity_hardening \
-         20261028000004_practice_submission 20261028000005_practice_hardening 20261028000006_view_revision_and_pilot_import; do
+         20261028000004_practice_submission 20261028000005_practice_hardening 20261028000006_view_revision_and_pilot_import \
+         20261028000007_practice_source 20261028000008_practice_view_and_import_hardening; do
   q -f "$M/$f.sql" >/dev/null
 done
 
@@ -76,6 +78,26 @@ w("dup_number", base(questions=[q1(), q1()]))
 w("wrong_policy", base(marking_policy_id="gate-2027-v1"))
 w("bad_sha", base(source={"file_name": "SYNTHETIC2026.pdf", "page_count": 10, "sha256": "nope"}))
 w("extra", base(questions=[q1(), q2(), q1(number=3, source_page=4)]))
+# same option COUNT, different option SET: existing A,B vs incoming A,C
+o = q1(); o["options"] = [{"option_id": "A", "body_md": "alpha"}, {"option_id": "C", "body_md": "beta"}]
+o["key"]["mcq_option"] = "A";                                     w("opt_swap", base(questions=[o, q2()]))
+# required fields missing (SQL NULL inside the function), each on an otherwise valid payload
+def drop(qf, *path):
+    o = qf(); t = o
+    for k in path[:-1]: t = t[k]
+    del t[path[-1]]; return o
+w("miss_marks",    base(questions=[drop(q1, "marks"), q2()]))
+w("miss_type",     base(questions=[drop(q1, "type"), q2()]))
+w("miss_key",      base(questions=[drop(q1, "key"), q2()]))
+w("miss_solution", base(questions=[drop(q1, "solution"), q2()]))
+w("miss_topic",    base(questions=[drop(q1, "topic_path"), q2()]))
+w("miss_options",  base(questions=[drop(q1, "options"), q2()]))
+w("miss_nat_opts", base(questions=[q1(), drop(q2, "options")]))
+w("miss_ranges",   base(questions=[q1(), drop(q2, "key", "nat_ranges")]))
+m = q1(number=9, source_page=5, type="MSQ"); del m["key"]["mcq_option"]
+w("miss_msq",      base(questions=[q1(), q2(), m]))
+b = base(); del b["questions"];                                    w("miss_questions", b)
+
 PY
 
 # ---------- 1. first import ----------
@@ -113,21 +135,27 @@ ok "no-op adds no provenance"        "$(cnt "private.question_provenance")" 2
 ok "no-op adds no audit row"         "$(cnt "private.import_jobs")" 1
 
 # ---------- 3. differing content aborts and writes nothing ----------
-for v in opt_body q_body key_move key_unverified nat_bad nat_inverted; do
-  before=$(cnt "public.questions"); beforeo=$(cnt "public.question_options"); beforek=$(cnt "private.answer_keys")
+for v in opt_body opt_swap q_body key_move key_unverified nat_bad nat_inverted; do
+  before=$(cnt "public.questions"); beforeo=$(cnt "public.question_options"); beforek=$(cnt "private.answer_keys"); beforej=$(cnt "private.import_jobs")
   E=$(imp "$DIR/$v.json" 2>&1 || true)
   ok "$v aborts"                     "$(echo "$E" | grep -c 'ERROR')" 1
   ok "$v wrote no question"          "$(cnt "public.questions")" "$before"
   ok "$v wrote no option"            "$(cnt "public.question_options")" "$beforeo"
   ok "$v wrote no key"               "$(cnt "private.answer_keys")" "$beforek"
+  ok "$v left no audit row (rolled back)" "$(cnt "private.import_jobs")" "$beforej"
 done
+ok "same-count option swap names the set" "$(imp "$DIR/opt_swap.json" 2>&1 | grep -c 'option set of question 1 differs')" 1
+ok "same-count option swap added no option C" "$(cnt "public.question_options where option_id='C'")" 0
 ok "reworded option detected"        "$(imp "$DIR/opt_body.json" 2>&1 | grep -c 'option .* differs')" 1
 
 # ---------- 4. invalid payloads are rejected before any write ----------
-for v in key_missing nat_opts dup_number wrong_policy bad_sha no_solution; do
+for v in key_missing nat_opts dup_number wrong_policy bad_sha no_solution \
+         miss_marks miss_type miss_key miss_solution miss_topic miss_options miss_nat_opts miss_ranges miss_msq miss_questions; do
   E=$(imp "$DIR/$v.json" 2>&1 || true)
   ok "$v rejected"                   "$(echo "$E" | grep -c 'ERROR')" 1
+  ok "$v rejected by validation"     "$(echo "$E" | grep -c 'pilot_import:')" 1
 done
+ok "required-field rejects left no audit row" "$(cnt "private.import_jobs")" 1
 ok "nothing extra written by rejects" "$(cnt "public.questions")" 2
 
 # ---------- 5. partial re-run adds only the missing question ----------
@@ -192,6 +220,44 @@ for role in anon authenticated; do
 done
 ok "new functions invoker with empty search_path" \
   "$(q -c "select bool_and(not prosecdef and array_to_string(proconfig, ',') like '%search_path=\"\"%') from pg_proc where proname in ('pilot_import','practice_question_revision','practice_context')")" t
+
+# ---------- 8. single-snapshot learner view (000008) ----------
+Q3=$(q -c "select id from public.questions where paper_id='$PAP' and number=3")
+V=$(q -c "set role service_role; select public.practice_question_view('$Q3')::text")
+ok "view returns only allowlisted fields" "$(jf "$V" "sorted(d)")" "['body_md', 'exam_year', 'id', 'marks', 'number', 'options', 'revision', 'session_label', 'topic', 'type']"
+ok "view options carry only id and body" "$(jf "$V" "sorted({k for o in d['options'] for k in o})")" "['body_md', 'id']"
+ok "view has no key or solution text" "$(printf '%s' "$V" | grep -ci 'mcq_option\|nat_ranges\|solution\|fingerprint\|policy')" 0
+ok "view revision equals practice_question_revision" "$(jf "$V" "d['revision']")" "$(q -c "set role service_role; select public.practice_question_revision('$Q3')")"
+ok "view revision equals the scoring fingerprint" "$(jf "$V" "d['revision']")" "$(q -c "set role service_role; select public.practice_scoring_context('$Q3')->>'fingerprint'")"
+# An uncommitted option-body edit in another session: the view still pairs OLD body with OLD revision.
+q -c "create table public.view_gate(x int); grant all on public.view_gate to postgres" >/dev/null
+( q -c "begin; update public.question_options set body_md='beta concurrently reworded' where question_id='$Q3' and option_id='B'; select pg_sleep(2); commit;" >/dev/null ) &
+sleep 0.7
+VMID=$(q -c "set role service_role; select public.practice_question_view('$Q3')::text")
+ok "mid-edit view shows the old option body" "$(jf "$VMID" "d['options'][1]['body_md']")" beta
+ok "mid-edit view keeps the old revision"    "$(jf "$VMID" "d['revision']")" "$(jf "$V" "d['revision']")"
+wait
+VNEW=$(q -c "set role service_role; select public.practice_question_view('$Q3')::text")
+ok "after commit the view shows the new option body" "$(jf "$VNEW" "d['options'][1]['body_md']")" "beta concurrently reworded"
+ok "after commit the revision moved with it" "$([ "$(jf "$VNEW" "d['revision']")" != "$(jf "$V" "d['revision']")" ] && echo changed)" changed
+ok "new view revision equals the new scoring fingerprint" "$(jf "$VNEW" "d['revision']")" "$(q -c "set role service_role; select public.practice_scoring_context('$Q3')->>'fingerprint'")"
+K3=$(q -c "select id from private.answer_keys where question_id='$Q3' and version=1")
+rec3() { q -c "set role service_role; select public.practice_record_attempt('$U1','$1','$H1','$Q3',null,'{\"kind\":\"MCQ\",\"option\":\"B\"}','correct',3::smallint,'$K3','gate-2026-v1','$2',10)::text"; }
+ok "answer to the old view is refused after the edit" "$(jf "$(rec3 00000000-0000-4000-8000-00000000e201 "$(jf "$V" "d['revision']")")" "d['outcome']")" stale
+ok "answer to the new view is saved" "$(jf "$(rec3 00000000-0000-4000-8000-00000000e202 "$(jf "$VNEW" "d['revision']")")" "d['outcome']")" created
+q -c "update public.questions set body_md='Synthetic Q3 reworded' where id='$Q3'" >/dev/null
+VQ=$(q -c "set role service_role; select public.practice_question_view('$Q3')::text")
+ok "question body edit shows in the view" "$(jf "$VQ" "d['body_md']")" "Synthetic Q3 reworded"
+ok "question body edit moves the view revision" "$([ "$(jf "$VQ" "d['revision']")" != "$(jf "$VNEW" "d['revision']")" ] && echo changed)" changed
+ok "replay of the saved answer survives the edit" "$(jf "$(rec3 00000000-0000-4000-8000-00000000e202 "$(jf "$VNEW" "d['revision']")")" "d['outcome']")" replay
+q -c "update public.questions set validation_state='in_review', validated_at=null where id='$Q3'" >/dev/null
+ok "retired question has no view" "$(q -c "set role service_role; select coalesce(public.practice_question_view('$Q3')::text,'none')")" none
+for role in anon authenticated; do
+  E=$(q -c "set role $role; select public.practice_question_view('$Q3')" 2>&1 || true)
+  ok "$role cannot execute practice_question_view" "$(echo "$E" | grep -c 'permission denied')" 1
+done
+ok "view and importer are invoker with empty search_path" \
+  "$(q -c "select bool_and(not prosecdef and array_to_string(proconfig, ',') like '%search_path=\"\"%') from pg_proc where proname in ('pilot_import','practice_question_view')")" t
 
 echo "# pass $PASS fail $FAIL"
 [ "$FAIL" -eq 0 ]

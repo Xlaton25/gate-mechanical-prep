@@ -17,7 +17,8 @@
 - Answer checking and keys are server-only — keys must never reach the client.
 - Source statuses exclude "verified" until validation tooling exists.
 - No PDFs or credentials in git (.gitignore enforces *.pdf, *.zip, .env.*). `.env` IS tracked and may hold only public browser config (URL, publishable key) — hosted builds need it; a test rejects secrets in it.
-- Canonical SQL lives in db/migrations; the owned GATE project received 000001–000003 as ONE combined applied migration `20261028040618` (mapping in docs/supabase.md); later files each get their own migration (000004 → `20261028163911`, 000005 → `20261028165705`); a parity test compares them — never re-run db/migrations against the remote.
+- Canonical SQL lives in db/migrations; the owned GATE project received 000001–000003 as ONE combined applied migration `20261028040618` (mapping in docs/supabase.md); later files each get their own migration (full list in docs/supabase.md); a parity test compares them — never re-run db/migrations against the remote.
+- Practice question detail comes only from `practice_question_view` (one statement returns DTO + revision) — a separate read and revision call could pair old wording with a new revision.
 - Auth state comes only from AuthProvider in src/lib/auth.tsx (single listener) — avoids competing subscribers and stale sessions.
 - Account preferences go through the PreferencesStore port with the user session (RLS), never the admin client; updates send only preference columns.
 - Server-only code lives in src/server/ with *.server.ts names — double guard keeps it out of client bundles.

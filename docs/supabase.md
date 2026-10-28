@@ -70,6 +70,7 @@ Applied migration mapping (canonical `db/migrations` -> applied in owned GATE `u
 - 000005 -> `20261028165705`
 - 000006 -> `20261028173202` (content-bound view revision + service-only create-only pilot import)
 - 000007 -> `20261028173740` (display provenance: page + paper file name only)
+- 000008 -> `20261028224036` (single-snapshot `practice_question_view`: question DTO + revision from one statement, allowlisted fields, service-role only; importer compares whole existing option sets before any write and rejects missing required fields). Detail reads no longer pair a separate RLS read with a second revision call.
 
 Imported: 1 paper (ME2026, session 6) with verified policy `gate-2026-v1`, 10 validated questions
 (numbers 1, 2, 4, 5, 6, 7, 11, 16, 18, 61; 9 MCQ + 1 NAT, 13 marks), their options, official version-1

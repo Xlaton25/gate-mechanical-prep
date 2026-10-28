@@ -2,6 +2,7 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Json } from "@/integrations/supabase/types";
 import type { PracticeStore } from "./submit.server";
+import { parsePracticeView, type PracticeView } from "./view.server";
 
 class StoreError extends Error {
   constructor(public code: string) {
@@ -47,11 +48,14 @@ export function createAdminPracticeStore(): PracticeStore {
   };
 }
 
-/** Opaque revision of what the learner is about to be shown (service-role only, hash only). */
-export async function fetchPracticeRevision(questionId: string): Promise<string | null> {
-  const { data, error } = await supabaseAdmin.rpc("practice_question_revision", { p_question_id: questionId });
+/**
+ * Learner-safe question fields + revision from ONE database snapshot (service-role only).
+ * Never a key, NAT range or solution; parsePracticeView copies allowlisted fields only.
+ */
+export async function fetchPracticeView(questionId: string): Promise<PracticeView | null> {
+  const { data, error } = await supabaseAdmin.rpc("practice_question_view", { p_question_id: questionId });
   if (error) throw new StoreError(error.code ?? "rpc");
-  return typeof data === "string" && /^[0-9a-f]{32}$/.test(data) ? data : null;
+  return data == null ? null : parsePracticeView(data, questionId);
 }
 
 /** Which page of which paper file a question came from. Never a bucket path. */
