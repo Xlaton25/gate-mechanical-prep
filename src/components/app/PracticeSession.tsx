@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -45,7 +45,17 @@ export function useDefaultPracticeApi(): PracticeApi {
   };
 }
 
-export function PracticeSession({ api }: { api: PracticeApi }) {
+export interface PracticeScope {
+  /** Restrict and order the list (daily set, revision queue, filtered PYQ sequence). */
+  filterIds?: string[];
+  /** Daily set the attempts belong to; only passed for questions in that set. */
+  assignmentId?: string | null;
+  initialId?: string | null;
+  /** Per-question account actions (bookmark, mark for revision). */
+  extras?: (questionId: string) => ReactNode;
+}
+
+export function PracticeSession({ api, ...scope }: { api: PracticeApi } & PracticeScope) {
   const { status, user } = useAuth();
   if (status === "loading") return <div className="surface h-40 animate-pulse" aria-busy="true" aria-label="Loading account" />;
   if (status === "unavailable")
@@ -56,12 +66,12 @@ export function PracticeSession({ api }: { api: PracticeApi }) {
         Answers are checked and saved on the server against your account, so scored practice needs sign-in.
       </EmptyState>
     );
-  return <SignedInPractice key={user.id} userId={user.id} api={api} />;
+  return <SignedInPractice key={user.id} userId={user.id} api={api} {...scope} />;
 }
 
-function SignedInPractice({ userId, api }: { userId: string; api: PracticeApi }) {
+function SignedInPractice({ userId, api, filterIds, assignmentId = null, initialId = null, extras }: { userId: string; api: PracticeApi } & PracticeScope) {
   const list = useQuery({ queryKey: ["practice", userId, "list"], queryFn: () => api.list(userId) });
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(initialId ?? filterIds?.[0] ?? null);
 
   if (list.isPending) return <div className="surface h-40 animate-pulse" aria-busy="true" aria-label="Loading questions" />;
   if (list.isError || !list.data.ok)
@@ -70,7 +80,10 @@ function SignedInPractice({ userId, api }: { userId: string; api: PracticeApi })
         Questions couldn't be loaded. Nothing is shown rather than guessing.
       </EmptyState>
     );
-  const { questions, attempts } = list.data;
+  const { attempts } = list.data;
+  const questions = filterIds
+    ? filterIds.flatMap((id) => list.data.questions.filter((q) => q.id === id))
+    : list.data.questions;
   if (questions.length === 0)
     return (
       <EmptyState icon={BookOpenCheck} title="No validated questions yet">
@@ -81,7 +94,7 @@ function SignedInPractice({ userId, api }: { userId: string; api: PracticeApi })
   const net = attempts.reduce((s, a) => s + a.marksThirds, 0);
   return (
     <div className="grid gap-6 lg:grid-cols-[18rem_1fr]">
-      <Panel title="Pilot questions">
+      <Panel title={filterIds ? `This set · ${questions.length}` : "Pilot questions"}>
         <p className="mb-3 text-sm text-muted-foreground">
           {attempts.length} saved attempt{attempts.length === 1 ? "" : "s"} · {attempts.filter((a) => a.status === "correct").length} correct · net {fmtMarks(net)} marks
         </p>
@@ -96,7 +109,12 @@ function SignedInPractice({ userId, api }: { userId: string; api: PracticeApi })
         </ul>
       </Panel>
       {selected ? (
-        <QuestionPanel key={selected} userId={userId} questionId={selected} api={api} onSaved={() => list.refetch()} />
+        <QuestionPanel
+          key={selected} userId={userId} questionId={selected} api={api} onSaved={() => list.refetch()}
+          assignmentId={assignmentId && filterIds?.includes(selected) ? assignmentId : null}
+          extras={extras?.(selected)}
+          onNext={(() => { const i = questions.findIndex((q) => q.id === selected); const n = questions[i + 1]; return n ? () => setSelected(n.id) : undefined; })()}
+        />
       ) : (
         <Panel title="Question"><p className="text-sm text-muted-foreground">Pick a question to start.</p></Panel>
       )}
@@ -104,7 +122,10 @@ function SignedInPractice({ userId, api }: { userId: string; api: PracticeApi })
   );
 }
 
-function QuestionPanel({ userId, questionId, api, onSaved }: { userId: string; questionId: string; api: PracticeApi; onSaved: () => void }) {
+function QuestionPanel({ userId, questionId, api, onSaved, assignmentId = null, extras, onNext }: {
+  userId: string; questionId: string; api: PracticeApi; onSaved: () => void;
+  assignmentId?: string | null; extras?: ReactNode; onNext?: () => void;
+}) {
   const detail = useQuery({ queryKey: ["practice", userId, "q", questionId], queryFn: () => api.detail(userId, questionId) });
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<SubmitError | "network" | null>(null);
@@ -157,7 +178,7 @@ function QuestionPanel({ userId, questionId, api, onSaved }: { userId: string; q
   const submitNew = (response: PracticeResponse) => {
     if (inFlight.current || unresolved) return;
     const durationSec = Math.min(86400, Math.max(0, Math.round((Date.now() - started.current) / 1000)));
-    void send({ submissionId: crypto.randomUUID(), questionId: q.id, expectedRevision: q.revision, assignmentId: null, durationSec, response });
+    void send({ submissionId: crypto.randomUUID(), questionId: q.id, expectedRevision: q.revision, assignmentId, durationSec, response });
   };
 
   const startOver = () => {
@@ -175,6 +196,7 @@ function QuestionPanel({ userId, questionId, api, onSaved }: { userId: string; q
           {[q.topic, q.sourceFile && `${q.sourceFile}${q.sourcePage ? ` · page ${q.sourcePage}` : ""}`].filter(Boolean).join(" · ")}
         </p>
       )}
+      {extras && <div className="mb-3 flex flex-wrap gap-2">{extras}</div>}
       <MathMarkdown className="text-base leading-relaxed">{q.bodyMd}</MathMarkdown>
       {q.options.length > 0 && (
         <ol className="mt-4 space-y-2">
@@ -195,7 +217,10 @@ function QuestionPanel({ userId, questionId, api, onSaved }: { userId: string; q
             ) : (
               <p className="text-sm text-muted-foreground">No reviewed solution is available for this question yet.</p>
             )}
-            <Button variant="outline" onClick={startOver}>Attempt again</Button>
+            <div className="flex flex-wrap gap-2">
+              {onNext && <Button onClick={onNext}>Next question</Button>}
+              <Button variant="outline" onClick={startOver}>Attempt again</Button>
+            </div>
           </div>
         ) : (
           <>
