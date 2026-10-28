@@ -16,7 +16,7 @@
 - Never fabricate questions, answers, metrics or chart points; show empty states — data is unverified.
 - Answer checking and keys are server-only — keys must never reach the client.
 - Source statuses exclude "verified" until validation tooling exists.
-- No PDFs or credentials in git (.gitignore enforces *.pdf, *.zip, .env).
+- No PDFs or credentials in git (.gitignore enforces *.pdf, *.zip, .env.*). `.env` IS tracked and may hold only public browser config (URL, publishable key) — hosted builds need it; a test rejects secrets in it.
 - Canonical SQL lives in db/migrations; the owned GATE project received 000001–000003 as ONE combined applied migration `20261028040618` (mapping in docs/supabase.md); later files need their own new migration — never re-run db/migrations against the remote.
 - Auth state comes only from AuthProvider in src/lib/auth.tsx (single listener) — avoids competing subscribers and stale sessions.
 - Account preferences go through the PreferencesStore port with the user session (RLS), never the admin client; updates send only preference columns.
