@@ -11,7 +11,7 @@ pg_ctl -D "$DIR/data" -o "-k $DIR -p $PORT -c listen_addresses=''" -l "$DIR/log"
 trap 'pg_ctl -D "$DIR/data" -m immediate stop >/dev/null 2>&1; rm -rf "$DIR"' EXIT
 q() { psql -X -q -v ON_ERROR_STOP=1 -h "$DIR" -p "$PORT" -U postgres -d postgres "$@"; }
 q -c "create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;
-create schema extensions; create schema auth; create table auth.users (id uuid primary key);
+create schema extensions; create schema auth; create table auth.users (id uuid primary key, email text);
 create function auth.uid() returns uuid language sql stable as \$\$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid \$\$;
 grant usage on schema public, extensions, auth to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated, service_role;" >/dev/null
