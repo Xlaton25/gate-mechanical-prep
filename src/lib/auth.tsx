@@ -72,7 +72,6 @@ const SIGN_OUT_FAILED = "Couldn't sign out. You're still signed in — check you
 
 export function AuthProvider({ children, source }: { children: ReactNode; source?: SessionSource }) {
   const queryClient = useQueryClient();
-  const auth: SessionSource = source ?? (supabase.auth as unknown as SessionSource);
   const [state, setState] = useState<{ status: AuthStatus; user: AuthUser | null }>({ status: "loading", user: null });
   const [signOutPending, setSignOutPending] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
@@ -80,8 +79,8 @@ export function AuthProvider({ children, source }: { children: ReactNode; source
   const generation = useRef(0);
   const currentUid = useRef<string | null | undefined>(undefined); // undefined = not yet known
   const signingOut = useRef(false);
-  const authRef = useRef(auth);
-  authRef.current = auth;
+  // Resolved only inside the effect (never during render/SSR) so an unconfigured client can't crash the shell.
+  const authRef = useRef<SessionSource | null>(null);
 
   const apply = useCallback((user: AuthUser | null, status?: AuthStatus) => {
     const prev = currentUid.current;
@@ -96,8 +95,9 @@ export function AuthProvider({ children, source }: { children: ReactNode; source
   useEffect(() => {
     let active = true;
     let unsubscribe = () => {};
-    const a = authRef.current;
     try {
+      const a: SessionSource = source ?? (supabase.auth as unknown as SessionSource);
+      authRef.current = a;
       const { data } = a.onAuthStateChange((event, session) => {
         if (!active) return;
         if (event === "TOKEN_REFRESHED" && toUser(session?.user)?.id === currentUid.current) return;
@@ -107,9 +107,10 @@ export function AuthProvider({ children, source }: { children: ReactNode; source
       unsubscribe = () => data.subscription.unsubscribe();
       const my = generation.current;
       a.getSession().then(
-        ({ data: d }) => {
+        (res) => {
           if (!active || generation.current !== my) return;
-          apply(toUser(d.session?.user));
+          if (res?.error) { apply(null, "unavailable"); return; }
+          apply(toUser(res?.data?.session?.user));
         },
         () => {
           if (!active || generation.current !== my) return;
@@ -119,27 +120,29 @@ export function AuthProvider({ children, source }: { children: ReactNode; source
     } catch {
       apply(null, "unavailable");
     }
-    return () => { active = false; unsubscribe(); };
-  }, [apply]);
+    return () => { active = false; unsubscribe(); authRef.current = null; };
+  }, [apply, source]);
 
   const signOut = useCallback(async (): Promise<boolean> => {
     if (signingOut.current) return false;
     const uid = currentUid.current;
-    if (!uid) return false;
+    const a = authRef.current;
+    if (!uid || !a) return false;
+    const startGen = generation.current;
     signingOut.current = true;
     setSignOutPending(true);
     setSignOutError(null);
     let ok = false;
     try {
-      const { error } = await authRef.current.signOut();
+      const { error } = await a.signOut();
       ok = !error;
     } catch {
       ok = false;
     }
     signingOut.current = false;
     setSignOutPending(false);
-    // A newer sign-in for another account happened meanwhile: never overwrite it.
-    if (currentUid.current !== uid) return ok;
+    // Any newer auth event (SIGNED_OUT, or SIGNED_IN for the same or another uid) wins over this completion.
+    if (generation.current !== startGen || currentUid.current !== uid) return ok;
     if (!ok) { setSignOutError(SIGN_OUT_FAILED); return false; }
     // Provider confirmed local session removal (no error); reflect it even if the event is late.
     generation.current++;
