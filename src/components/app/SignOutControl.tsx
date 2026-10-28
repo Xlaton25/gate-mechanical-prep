@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 
 /** Sign-out button with pending state and inline retryable error. */
-export function SignOutControl({ onSignOut, pending, error }: { onSignOut: () => unknown; pending?: boolean; error?: string | null }) {
+export function SignOutControl({ onSignOut, pending, error }: { onSignOut: () => unknown; pending?: boolean | undefined; error?: string | null | undefined }) {
   return (
     <div className="grid gap-2">
       <Button variant="outline" onClick={() => { if (!pending) void onSignOut(); }} disabled={pending}>

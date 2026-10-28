@@ -163,7 +163,7 @@ describe("account switch isolation", () => {
     expect(screen.queryByDisplayValue("90")).not.toBeInTheDocument();
     await waitFor(() => expect(screen.getByLabelText("Daily study minutes")).toHaveValue("30"));
     expect(store.update).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(store.update).mock.calls[0][0]).toBe(A);
+    expect(vi.mocked(store.update).mock.calls[0]?.[0]).toBe(A);
   });
 });
 
