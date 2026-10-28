@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Real PostgreSQL (multi-session) rehearsal of db/migrations 000001–000005.
+# Real PostgreSQL (multi-session) rehearsal of db/migrations 000001–000006.
 # Starts a throwaway local cluster in /tmp, simulates Supabase roles, uses ONLY synthetic rows,
 # and never touches a remote project. Usage: bash db/tests/practice_hardening.pg.sh
 set -euo pipefail
@@ -20,7 +20,7 @@ create schema extensions; create schema auth; create table auth.users (id uuid p
 create function auth.uid() returns uuid language sql stable as \$\$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid \$\$;
 grant usage on schema public, extensions, auth to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated, service_role;" >/dev/null
-for f in 20261027000001_core_schema 20261027000002_security 20261027000003_integrity_hardening 20261028000004_practice_submission 20261028000005_practice_hardening; do
+for f in 20261027000001_core_schema 20261027000002_security 20261027000003_integrity_hardening 20261028000004_practice_submission 20261028000005_practice_hardening 20261028000006_view_revision_and_pilot_import; do
   q -f "$M/$f.sql" >/dev/null
 done
 
