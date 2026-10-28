@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
  */
 export function PracticeAnswerInput({
   type, options = ["A", "B", "C", "D"], disabled, onSubmit, submitLabel = "Submit answer", initial,
-}: { type: QuestionType; options?: string[]; disabled?: boolean; onSubmit: (r: AttemptResponse) => void; submitLabel?: string; initial?: { options?: string[]; value?: string } }) {
+}: { type: QuestionType; options?: string[]; disabled?: boolean; onSubmit: (r: AttemptResponse) => void; submitLabel?: string; initial?: { options?: string[]; value?: string } | undefined }) {
   const [picked, setPicked] = useState<string[]>(initial?.options ?? []);
   const [nat, setNat] = useState(initial?.value ?? "");
   const toggle = (o: string) =>

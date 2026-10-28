@@ -27,7 +27,7 @@ export function Loading({ label }: { label: string }) {
   return <div className="surface h-40 animate-pulse" aria-busy="true" aria-label={label} />;
 }
 
-export function LoadFailed({ onRetry, setup }: { onRetry: () => void; setup?: boolean }) {
+export function LoadFailed({ onRetry, setup }: { onRetry: () => void; setup?: boolean | undefined }) {
   return (
     <EmptyState icon={Lock} title={setup ? "Setup is pending" : "Couldn't load this"} action={<Button variant="outline" onClick={onRetry}>Try again</Button>}>
       Nothing is shown rather than guessing.
@@ -42,7 +42,7 @@ export const qLabel = (q: Pick<QuestionMeta, "year" | "session" | "number" | "ty
 export function PracticeLink({ ids, id, children, variant = "ghost" }: { ids: string[]; id?: string; children: ReactNode; variant?: "ghost" | "default" | "outline" }) {
   return (
     <Button variant={variant} asChild className="h-auto min-h-11 justify-start whitespace-normal text-left">
-      <Link to="/practice" search={{ ids: ids.join(","), q: id ?? ids[0] }}>{children}</Link>
+      <Link to="/practice" search={{ ids: ids.join(","), ...(id ?? ids[0] ? { q: (id ?? ids[0])! } : {}) }}>{children}</Link>
     </Button>
   );
 }
