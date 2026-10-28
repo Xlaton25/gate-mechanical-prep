@@ -10,8 +10,8 @@
 - [x] GitHub sync: Xlaton25/gate-mechanical-prep (public, owner's choice)
 
 ## Milestone 1 — DB-ready schema & scoring foundation
-- [x] Migrations + RLS applied to GATE as combined remote migration `20261028040618`; pgTAP script (`db/tests`) not executed on Supabase
-- [x] Server-only scoring (MCQ/MSQ/NAT, gate-2027-v1 policy) with unit tests
+- [x] Migrations + RLS applied to GATE as combined remote migration `20261028040618`; pgTAP script (`db/tests`) passes 43/43 on local real PostgreSQL + pgTAP after 000001–000005; not executed on Supabase
+- [x] Server-only scoring (MCQ/MSQ/NAT; gate-2026-v1 and gate-2027-v1 policies) with unit tests
 - [x] Study-day calc + idempotent assignment uniqueness (no scheduler yet)
 
 ## Milestone 2 — Accounts & synced preferences
@@ -24,6 +24,7 @@
 - [x] gate-2026-v1 policy (code + DB), authenticated list/detail/submit, idempotent transactional saves (migration 20261028163911)
 - [x] /practice pilot screen (sign-in required, empty state until content exists)
 - [x] Review hardening (migration 20261028165705): replay-first, content locks, solution snapshots, account-bound calls, frozen retries, KaTeX/table rendering
+- [ ] View-revision binding (detail DTO revision checked on submit) before any admin content edits
 - [ ] Private import of the separately validated 10-question 2026 pilot (owner-supplied; not in git)
 - [ ] Signed-in end-to-end submission tested against real content
 

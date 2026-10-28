@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 
 /**
  * Answer capture only. It never checks correctness — checking must happen
- * server-side against a versioned answer key (not yet built).
+ * server-side against a versioned answer key (submitPracticeAttempt).
  */
 export function PracticeAnswerInput({
   type, options = ["A", "B", "C", "D"], disabled, onSubmit,
