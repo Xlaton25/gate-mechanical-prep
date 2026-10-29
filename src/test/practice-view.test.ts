@@ -39,3 +39,12 @@ describe("single-snapshot practice view", () => {
     expect(detail).not.toMatch(/fetchPracticeRevision|\.from\("questions"\)/);
   });
 });
+
+it("allows only bounded PNG source figures and strips extra figure fields", () => {
+  const png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB";
+  expect(parsePracticeView(row({ figures: [{ source_page: 4, png_base64: png, answer: "secret" }] }), QID)?.figures)
+    .toEqual([{ sourcePage: 4, pngBase64: png }]);
+  expect(parsePracticeView(row({ figures: [{ source_page: 0, png_base64: png }] }), QID)).toBeNull();
+  expect(parsePracticeView(row({ figures: [{ source_page: 4, png_base64: "<svg onload=alert(1)>" }] }), QID)).toBeNull();
+  expect(parsePracticeView(row({ figures: [{ source_page: 4, png_base64: "iVBORw0KGgo" + "A".repeat(1500000) }] }), QID)).toBeNull();
+});
