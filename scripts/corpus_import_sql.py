@@ -36,7 +36,7 @@ for q in select value from jsonb_array_elements(batch) loop
   insert into private.question_figures(question_id,ordinal,source_page,sha256,png_base64) values(qid,n,(f->>'source_page')::int,f->>'sha256',f->>'png_base64');
  end loop;
  insert into private.question_provenance(question_id,source_file_id,source_question_number,source_page)
- values(qid,sid,(q->>'number')::smallint,(q->'figures'->0->>'source_page')::int);
+ values(qid,sid,coalesce(q->>'source_number',q->>'number')::smallint,(q->'figures'->0->>'source_page')::int);
  k:=q->'key';
  if q->>'hold' is null then
   insert into private.answer_keys(question_id,question_type,version,provenance,provenance_verified,mcq_option,msq_options)
@@ -47,7 +47,7 @@ for q in select value from jsonb_array_elements(batch) loop
   end loop;
  end if;
  insert into private.question_validations(question_id,to_state,reviewer,note)
- values(qid,'in_review','Codex source import',jsonb_build_object('key_url',q->>'key_url','key_sha256',q->>'key_sha256','official_answer_raw',q->>'answer_raw','hold',q->>'hold','scope','Source artwork and official master key; worked explanation pending')::text);
+ values(qid,'in_review','Codex source import',jsonb_build_object('key_url',q->>'key_url','key_sha256',q->>'key_sha256','official_answer_raw',q->>'answer_raw','source_section',q->>'section','source_number',coalesce(q->>'source_number',q->>'number'),'hold',q->>'hold','scope','Source artwork and official master key; worked explanation pending')::text);
 end loop;
 END $import$;
 ''')
