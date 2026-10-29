@@ -12,6 +12,9 @@ const applied = (version: string) => {
 };
 
 describe("canonical vs applied migration parity", () => {
+  it("000010 = 20261029042653", () => {
+    expect(applied("20261029042653")).toBe(canon("20261029000010_question_source_figures"));
+  });
   it("000001–000003 = combined 20261028040618", () => {
     expect(applied("20261028040618")).toBe(canon("20261027000001_core_schema", "20261027000002_security", "20261027000003_integrity_hardening"));
   });

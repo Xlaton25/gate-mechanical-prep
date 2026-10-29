@@ -27,7 +27,18 @@ export function parsePracticeView(raw: unknown, expectedQuestionId: string): Pra
     if (typeof oid !== "string" || !/^[A-H]$/.test(oid) || typeof ob !== "string") return null;
     opts.push({ id: oid, bodyMd: ob });
   }
+  const figures: { sourcePage: number; pngBase64: string }[] = [];
+  if (raw["figures"] !== undefined) {
+    if (!Array.isArray(raw["figures"]) || raw["figures"].length > 10) return null;
+    for (const f of raw["figures"]) {
+      if (!isObj(f) || typeof f["source_page"] !== "number" || !Number.isInteger(f["source_page"]) || f["source_page"] < 1 ||
+          typeof f["png_base64"] !== "string" || f["png_base64"].length > 1500000 ||
+          !/^iVBORw0KGgo[A-Za-z0-9+/=]+$/.test(f["png_base64"])) return null;
+      figures.push({ sourcePage: f["source_page"], pngBase64: f["png_base64"] });
+    }
+  }
   return {
+    ...(figures.length ? { figures } : {}),
     id,
     number,
     type: type as QuestionType,

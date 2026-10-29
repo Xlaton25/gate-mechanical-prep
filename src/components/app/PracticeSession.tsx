@@ -1,3 +1,4 @@
+import { QuestionContent } from "@/components/app/QuestionContent";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -197,7 +198,7 @@ function QuestionPanel({ userId, questionId, api, onSaved, assignmentId = null, 
         </p>
       )}
       {extras && <div className="mb-3 flex flex-wrap gap-2">{extras}</div>}
-      <MathMarkdown className="text-base leading-relaxed">{q.bodyMd}</MathMarkdown>
+      <QuestionContent question={q} />
       {q.options.length > 0 && (
         <ol className="mt-4 space-y-2">
           {q.options.map((o) => (

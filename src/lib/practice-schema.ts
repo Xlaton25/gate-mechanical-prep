@@ -54,6 +54,7 @@ export interface PracticeQuestionSummary {
 
 export interface PracticeQuestionDetail extends PracticeQuestionSummary {
   bodyMd: string;
+  figures?: { sourcePage: number; pngBase64: string }[];
   options: { id: string; bodyMd: string }[];
   /** Opaque revision of the wording/options/key/policy shown; must come back on submit. */
   revision: string;

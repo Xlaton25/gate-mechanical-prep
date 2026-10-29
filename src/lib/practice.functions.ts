@@ -32,7 +32,7 @@ export const listPracticeQuestions = createServerFn({ method: "GET" })
         .eq("validation_state", "validated")
         .order("paper_id")
         .order("number")
-        .limit(100),
+        .limit(1000),
       supabase
         .from("attempts")
         .select("id, question_id, status, marks_thirds, submitted_at")

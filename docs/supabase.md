@@ -89,3 +89,9 @@ Unverified / remaining: a real signed-in submission through the app UI; exact re
 import call; daily-10 scheduling; content editing/admin edits (view-revision checks exist for the learner
 path only); Netlify deployment of the current build; Supabase leaked-password protection is disabled
 (pre-existing warning).
+
+
+### Source figures (2026-10-29)
+Canonical `20261029000010_question_source_figures.sql` matches applied `20261029042653_question_source_figures.sql`. Source images remain in `private.question_figures`; only the authenticated server's single-snapshot question view returns allowlisted PNG artwork. SHA-256 and PNG signatures are checked at insertion. Images cannot change while a question is validated, and their hashes are bound into the scoring revision.
+
+Direct corpus import: 390 questions across six 2022–2026 papers, of which 380 have passed source/key review and 10 require scorer support. All 65 questions from 2026 passed source/key review. Only the original 10 are currently eligible in the deployed app: the 370 new reviewed questions are temporarily held until a build containing the source-image renderer and historical marking policies is available. GitHub API/CLI writes were blocked; the owner completed browser sign-in and the prepared code is being synced through GitHub directly. Ten official-key exceptions need scorer support. The user-approved 31 source-image corrections were applied and their stored hashes verified; one corrected question remains a special-key exception. The original ten question records and four saved attempts were preserved. New worked explanations and detailed topic classification remain pending. Twenty older PDFs remain at extraction/reconciliation stage; do not describe the full 2007–2026 corpus as complete. Source manifests cover all 26 uploaded PDFs.
