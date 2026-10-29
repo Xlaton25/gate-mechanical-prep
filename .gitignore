@@ -40,3 +40,6 @@ dist-ssr
 
 # Netlify build output
 .netlify/
+
+# Local Supabase CLI cache
+supabase/.temp/
