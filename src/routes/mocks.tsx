@@ -1,3 +1,4 @@
+import { QuestionContent } from "@/components/app/QuestionContent";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -113,7 +114,7 @@ function Running({ userId, test, onFinished }: { userId: string; test: MiniTestV
       {anyStale && <p role="alert" className="rounded-xl bg-secondary p-3 text-sm">A question changed after this test started. It won't be graded on old wording; submit and start a new test.</p>}
       {test.items.map((i) => i.question && !i.stale ? (
         <Panel key={i.position} title={`Question ${i.position} · ${i.question.type} · ${i.question.marks}m`}>
-          <MathMarkdown className="text-base leading-relaxed">{i.question.bodyMd}</MathMarkdown>
+          <QuestionContent question={i.question} />
           {i.question.options.length > 0 && (
             <ol className="mt-4 space-y-2">
               {i.question.options.map((o) => <li key={o.id} className="flex gap-2 rounded-xl border border-border p-3 text-sm"><span className="font-semibold">{o.id}.</span><MathMarkdown className="min-w-0 flex-1">{o.bodyMd}</MathMarkdown></li>)}
@@ -148,7 +149,7 @@ function Results({ test, onDone }: { test: MiniTestView; onDone: () => void }) {
         const q = test.items.find((x) => x.position === it.position)?.question;
         return (
           <Panel key={it.position} title={`Question ${it.position} · ${it.status === "unanswered" ? "blank" : it.status} · ${fmtThirds(it.marksThirds)}`}>
-            {q && <MathMarkdown className="text-sm">{q.bodyMd}</MathMarkdown>}
+            {q && <QuestionContent question={q} />}
             {it.solutionMd ? <MathMarkdown className="mt-3 rounded-xl bg-secondary p-4 text-sm">{it.solutionMd}</MathMarkdown> : <p className="mt-2 text-xs text-muted-foreground">No reviewed solution available.</p>}
           </Panel>
         );
