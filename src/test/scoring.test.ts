@@ -89,6 +89,14 @@ describe("keys", () => {
 });
 
 describe("policy versioning", () => {
+  it("scores 2021 MCQ deductions and NAT bounds with its own policy", () => {
+    for (const marks of [1, 2] as const) {
+      expect(scoreResponse({ ...mcq(marks), paperYear: 2021 }, kM, { kind: "MCQ", option: "A" }, "gate-2021-v1").marksThirds).toBe(-marks);
+    }
+    expect(scoreResponse({ ...nat, paperYear: 2021 }, kN, { kind: "NAT", value: "3.20" }, "gate-2021-v1").status).toBe("correct");
+    expect(scoreResponse({ ...nat, paperYear: 2021 }, kN, { kind: "NAT", value: "0" }, "gate-2021-v1").marksThirds).toBe(0);
+    expect(() => scoreResponse(mcq(1), kM, null, "gate-2021-v1")).toThrow(PolicyError);
+  });
   it("never applies 2027 rules to historical papers", () => {
     expect(() => scoreResponse({ ...mcq(1), paperYear: 2007 }, kM, { kind: "MCQ", option: "A" }, P)).toThrow(PolicyError);
   });
