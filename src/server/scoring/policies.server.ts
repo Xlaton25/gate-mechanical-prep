@@ -17,6 +17,11 @@ export interface MarkingPolicy {
 }
 
 export const MARKING_POLICIES: Readonly<Record<string, MarkingPolicy>> = Object.freeze({
+  "gate-2020-v1": Object.freeze({
+    id: "gate-2020-v1", appliesToYears: Object.freeze([2020]), verified: true,
+    sourceUrl: "https://www.careerpower.in/2019/GATE_2020_IB.pdf", verifiedOn: "2026-11-05",
+    mcqPenaltyThirds: Object.freeze({ 1: 1, 2: 2 }), msqNegative: false, natNegative: false, partialCredit: false,
+  }),
   "gate-2021-v1": Object.freeze({
     id: "gate-2021-v1", appliesToYears: Object.freeze([2021]), verified: true,
     sourceUrl: "https://gate2027.iitm.ac.in/static/doc/download/Answer_keys2021/me_merged_2021.pdf", verifiedOn: "2026-10-29",
