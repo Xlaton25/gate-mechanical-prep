@@ -15,7 +15,7 @@ export const Route = createFileRoute("/pyq")({
   component: () => (
     <>
       <PageHeader title="PYQ Explorer" description="Search validated questions by year, topic, type, marks and your attempts." />
-      <DataNotice>Coverage: a partial 10-question ME2026 pilot. The rest of the 26-paper archive isn't validated yet, so filters only reach these questions.</DataNotice>
+      <DataNotice>Browse released questions from the reviewed archive. The count below reflects the current question bank; additional papers are still being reviewed.</DataNotice>
       <SignedIn what="the question bank">{(uid) => <Explorer userId={uid} />}</SignedIn>
     </>
   ),
