@@ -4,8 +4,10 @@ import { PracticeSession, useDefaultPracticeApi } from "@/components/app/Practic
 import { QuestionActions } from "@/components/app/learning";
 import { useAuth } from "@/lib/auth";
 
+
 const UUID = /^[0-9a-f-]{36}$/i;
 type Search = { ids?: string | undefined; q?: string | undefined; set?: string | undefined };
+
 
 export const Route = createFileRoute("/practice")({
   validateSearch: (s: Record<string, unknown>): Search => ({
@@ -17,6 +19,7 @@ export const Route = createFileRoute("/practice")({
   component: Practice,
 });
 
+
 function Practice() {
   const api = useDefaultPracticeApi();
   const { user } = useAuth();
@@ -26,7 +29,7 @@ function Practice() {
     <>
       <PageHeader title={set ? "Today's set" : "Practice"} description="Validated questions only, checked on the server and saved to your account." />
       <div role="note" className="mb-6 rounded-2xl border border-border bg-secondary p-4 text-sm text-secondary-foreground">
-        Current question bank: a partial 10-question ME2026 pilot. Scores and progress come only from your saved attempts.
+        Practise released questions with verified answer keys and marking rules. Scores and progress come from your saved attempts.
       </div>
       <PracticeSession
         key={`${ids ?? ""}|${set ?? ""}`}
@@ -39,3 +42,4 @@ function Practice() {
     </>
   );
 }
+
