@@ -18,8 +18,8 @@ export const Route = createFileRoute("/mocks")({
   head: () => meta("Mini-tests", "Timed mini-tests from validated GATE ME questions, scored on the server."),
   component: () => (
     <>
-      <PageHeader title="Mini-tests" description="Short timed tests. Not a full GATE mock — full-length mode needs far more validated questions." />
-      <DataNotice>Built from the partial 10-question ME2026 pilot. Answers and solutions appear only after you submit the test.</DataNotice>
+      <PageHeader title="Mini-tests" description="Short timed tests with a question count, topic and duration you choose." />
+      <DataNotice>Built from released questions with verified answer keys and marking rules. Answers and available solutions appear after you submit the test.</DataNotice>
       <SignedIn what="mini-tests">{(uid) => <MiniTests userId={uid} />}</SignedIn>
     </>
   ),
