@@ -4,10 +4,8 @@ import { PracticeSession, useDefaultPracticeApi } from "@/components/app/Practic
 import { QuestionActions } from "@/components/app/learning";
 import { useAuth } from "@/lib/auth";
 
-
 const UUID = /^[0-9a-f-]{36}$/i;
 type Search = { ids?: string | undefined; q?: string | undefined; set?: string | undefined };
-
 
 export const Route = createFileRoute("/practice")({
   validateSearch: (s: Record<string, unknown>): Search => ({
@@ -18,7 +16,6 @@ export const Route = createFileRoute("/practice")({
   head: () => meta("Practice", "Practice validated GATE ME questions, checked and saved on the server."),
   component: Practice,
 });
-
 
 function Practice() {
   const api = useDefaultPracticeApi();
@@ -42,4 +39,3 @@ function Practice() {
     </>
   );
 }
-
