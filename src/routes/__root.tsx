@@ -9,7 +9,6 @@ import {
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "@/components/app/AppShell";
@@ -21,7 +20,9 @@ function NotFoundComponent() {
     <div className="py-20 text-center">
       <h1 className="text-5xl font-semibold">404</h1>
       <p className="mt-3 text-muted-foreground">This page doesn't exist.</p>
-      <Button asChild className="mt-6"><Link to="/">Back to dashboard</Link></Button>
+      <Button asChild className="mt-6">
+        <Link to="/">Back to dashboard</Link>
+      </Button>
     </div>
   );
 }
@@ -36,41 +37,67 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold">This page didn't load</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Something went wrong. Try again or go home.</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Something went wrong. Try again or go home.
+        </p>
         <div className="mt-6 flex justify-center gap-2">
-          <Button onClick={() => { router.invalidate(); reset(); }}>Try again</Button>
-          <Button variant="outline" asChild><a href="/">Go home</a></Button>
+          <Button
+            onClick={() => {
+              router.invalidate();
+              reset();
+            }}
+          >
+            Try again
+          </Button>
+          <Button variant="outline" asChild>
+            <a href="/">Go home</a>
+          </Button>
         </div>
       </div>
     </div>
   );
 }
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "GATE 2027 ME" },
-      { name: "description", content: "Private GATE 2027 Mechanical Engineering study workspace." },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
-      { rel: "icon", type: "image/png", href: "/favicon.png" },
-      { rel: "manifest", href: "/manifest.webmanifest" },
-      { rel: "apple-touch-icon", href: "/icon-192.png" },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=STIX+Two+Math&display=swap" },
-    ],
-  }),
-  shellComponent: RootShell,
-  component: RootComponent,
-  notFoundComponent: NotFoundComponent,
-  errorComponent: ErrorComponent,
-});
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
+  {
+    head: () => ({
+      meta: [
+        { charSet: "utf-8" },
+        {
+          name: "viewport",
+          content: "width=device-width, initial-scale=1, viewport-fit=cover",
+        },
+        { title: "GATE 2027 ME" },
+        {
+          name: "description",
+          content: "Private GATE 2027 Mechanical Engineering study workspace.",
+        },
+        { name: "robots", content: "noindex, nofollow" },
+      ],
+      links: [
+        { rel: "stylesheet", href: appCss },
+        { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+        { rel: "icon", type: "image/png", href: "/favicon.png" },
+        { rel: "manifest", href: "/manifest.webmanifest" },
+        { rel: "apple-touch-icon", href: "/icon-192.png" },
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        {
+          rel: "preconnect",
+          href: "https://fonts.gstatic.com",
+          crossOrigin: "anonymous",
+        },
+        {
+          rel: "stylesheet",
+          href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=STIX+Two+Math&display=swap",
+        },
+      ],
+    }),
+    shellComponent: RootShell,
+    component: RootComponent,
+    notFoundComponent: NotFoundComponent,
+    errorComponent: ErrorComponent,
+  }
+);
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
@@ -88,6 +115,22 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    const removeNetlifyBadge = () => {
+      document
+        .querySelectorAll('iframe[src*="netlify"]')
+        .forEach((el) => el.remove());
+    };
+
+    removeNetlifyBadge();
+
+    const observer = new MutationObserver(removeNetlifyBadge);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -98,20 +141,3 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
-import { useEffect } from 'react';
-
-// Inside your RootComponent:
-useEffect(() => {
-  const removeNetlifyBadge = () => {
-    document
-      .querySelectorAll('iframe[src*="netlify"]')
-      .forEach((el) => el.remove());
-  };
-
-  removeNetlifyBadge();
-
-  const observer = new MutationObserver(removeNetlifyBadge);
-  observer.observe(document.body, { childList: true, subtree: true });
-
-  return () => observer.disconnect();
-}, []);
