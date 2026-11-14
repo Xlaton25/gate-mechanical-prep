@@ -98,3 +98,20 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
+import { useEffect } from 'react';
+
+// Inside your RootComponent:
+useEffect(() => {
+  const removeNetlifyBadge = () => {
+    document
+      .querySelectorAll('iframe[src*="netlify"]')
+      .forEach((el) => el.remove());
+  };
+
+  removeNetlifyBadge();
+
+  const observer = new MutationObserver(removeNetlifyBadge);
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  return () => observer.disconnect();
+}, []);
