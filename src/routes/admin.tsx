@@ -6,6 +6,7 @@ import { EmptyState, PageHeader, Panel, meta } from "@/components/app/ui";
 import { INTAKE_SUMMARY, SOURCE_FILES, STATUS_LABEL, searchSources, totalPages } from "@/data/source-inventory";
 import type { SourceStatus } from "@/domain/types";
 import { AdminGate } from "@/components/app/AdminGate";
+import { AdminRoleManager } from "@/components/app/AdminRoleManager";
 
 export const Route = createFileRoute("/admin")({
   head: () => meta("Data Administration", "Source file registry for the GATE ME PYQ intake."),
@@ -27,6 +28,7 @@ function Admin() {
   return (
     <>
       <PageHeader title="Data Administration" description="Registry of received source files. Metadata only — PDFs are not stored or served by this app." />
+      <AdminRoleManager />
       <Panel title="Intake summary" className="mb-6">
         <ul className="grid gap-1 text-sm sm:grid-cols-2">
           <li>Archive: {INTAKE_SUMMARY.archive} — ZIP integrity {INTAKE_SUMMARY.zipIntegrity}</li>
