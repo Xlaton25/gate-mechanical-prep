@@ -1,5 +1,5 @@
 import {
-  BarChart3, BookOpen, Database, Home, LineChart, ListChecks, Menu, RotateCcw, Search, Settings, Target, Timer,
+  BarChart3, BookOpen, Home, LineChart, ListChecks, Menu, RotateCcw, Search, Settings, Target, Timer,
   type LucideIcon,
 } from "lucide-react";
 
