@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { EmptyState, PageHeader, Panel, meta } from "@/components/app/ui";
 import { INTAKE_SUMMARY, SOURCE_FILES, STATUS_LABEL, searchSources, totalPages } from "@/data/source-inventory";
 import type { SourceStatus } from "@/domain/types";
+import { AdminGate } from "@/components/app/AdminGate";
 
 export const Route = createFileRoute("/admin")({
   head: () => meta("Data Administration", "Source file registry for the GATE ME PYQ intake."),
-  component: Admin,
+  component: () => <AdminGate><Admin /></AdminGate>,
 });
 
 const statusClass: Record<SourceStatus, string> = {

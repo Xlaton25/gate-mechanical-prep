@@ -23,6 +23,9 @@ function Dashboard() {
     <>
       <PageHeader title="Dashboard" description="Your GATE 2027 Mechanical preparation, from your own saved attempts." />
       <SignedIn what="today's set">{(uid) => <Today userId={uid} />}</SignedIn>
+      <div className="mt-10 flex justify-end">
+        <Link to="/admin-login" aria-label="Admin sign in" className="text-[10px] text-muted-foreground/30 hover:text-muted-foreground">·</Link>
+      </div>
     </>
   );
 }
