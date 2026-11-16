@@ -25,7 +25,6 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   ]},
   { label: "Manage", items: [
     { to: "/settings", label: "Settings", icon: Settings },
-    { to: "/admin", label: "Data Administration", icon: Database },
   ]},
 ];
 
