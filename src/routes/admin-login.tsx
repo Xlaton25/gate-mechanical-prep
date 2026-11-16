@@ -7,10 +7,7 @@ import { meta } from "@/components/app/ui";
 import { supabaseAuthClient, useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/admin-login")({
-  head: () => {
-    const m = meta("Admin sign in", "Restricted sign-in for GATE 2027 ME data administrators.");
-    return { ...m, meta: [...(m.meta ?? []), { name: "robots", content: "noindex, nofollow" }] };
-  },
+  head: () => meta("Admin sign in", "Restricted sign-in for GATE 2027 ME data administrators."),
   component: AdminLogin,
 });
 
